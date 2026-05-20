@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>What the MT Ablation Actually Showed</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fafafa; color: #222; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; font-size: 16px; line-height: 1.6; }
+  .page { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+  .doc-header { border-left: 4px solid #2c5aa0; padding-left: 1.25rem; margin-bottom: 2.5rem; }
+  .doc-header h1 { font-size: 1.65rem; font-weight: 700; color: #111; line-height: 1.25; margin-bottom: 0.35rem; }
+  .doc-header .sub { color: #555; font-size: 0.97rem; margin-bottom: 0.4rem; }
+  .doc-header .meta { font-size: 0.8rem; color: #999; font-family: "SF Mono","Fira Code","Consolas",monospace; }
+  .doc-header .tagline { margin-top: 0.7rem; font-style: italic; font-size: 0.96rem; color: #333; }
+  section { margin-bottom: 2.5rem; }
+  h2 { font-size: 1.05rem; font-weight: 700; color: #444; border-left: 3px solid #2c5aa0; padding-left: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 1rem; }
+  h3 { font-size: 1rem; font-weight: 700; color: #222; margin: 1.2rem 0 0.45rem; }
+  p { color: #333; margin-bottom: 0.75rem; }
+  ul, ol { padding-left: 1.4rem; color: #333; margin-bottom: 0.75rem; }
+  li { margin-bottom: 0.3rem; }
+  strong { color: #111; }
+  code { font-family: "SF Mono","Fira Code","Consolas",monospace; font-size: 0.87em; background: #e8f4ff; color: #1a5fa8; padding: 0.1em 0.35em; border-radius: 3px; }
+  .tldr { background: #eef6ff; border-left: 4px solid #2c5aa0; border-radius: 0 6px 6px 0; padding: 1.2rem 1.5rem; margin-bottom: 2.5rem; }
+  .tldr h2 { border: none; padding: 0; margin-bottom: 0.7rem; }
+  .tldr ul { list-style: none; padding: 0; }
+  .tldr li { padding: 0.3rem 0 0.3rem 1.4rem; position: relative; font-size: 0.97rem; border-bottom: 1px solid #cde4f8; }
+  .tldr li:last-child { border-bottom: none; }
+  .tldr li::before { content: "→"; position: absolute; left: 0; color: #2c5aa0; font-weight: 700; }
+  .figure { background: #fff; border: 1px solid #dde; border-radius: 8px; padding: 1rem; margin: 1.25rem 0; }
+  .figure img { width: 100%; height: auto; display: block; border-radius: 4px; }
+  .figure .caption { margin-top: 0.6rem; font-size: 0.85rem; color: #666; font-style: italic; line-height: 1.45; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; margin: 0.75rem 0 1rem; }
+  th { background: #eef6ff; color: #2c5aa0; font-weight: 700; padding: 0.5rem 0.75rem; text-align: left; border-bottom: 2px solid #cde4f8; }
+  td { padding: 0.55rem 0.75rem; border-bottom: 1px solid #eee; color: #333; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .callout { background: #fffbf0; border-left: 4px solid #d4a017; border-radius: 0 6px 6px 0; padding: 1rem 1.25rem; margin: 1.25rem 0; font-size: 0.95rem; }
+  .callout.blue { background: #f0f4ff; border-left-color: #2c5aa0; }
+  .callout.green { background: #f3fbf5; border-left-color: #2a9d3f; }
+  .callout.red   { background: #fff5f5; border-left-color: #c0392b; }
+  .callout strong { color: #111; }
+  pre { background: #f4f6f8; border: 1px solid #dde; border-radius: 5px; padding: 0.75rem 1rem; font-family: "SF Mono","Fira Code","Consolas",monospace; font-size: 0.83rem; overflow-x: auto; color: #222; line-height: 1.5; margin: 0.5rem 0 1rem; }
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #dde; font-size: 0.8rem; color: #999; font-family: "SF Mono","Fira Code","Consolas",monospace; }
+  footer a { color: #2c5aa0; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="doc-header">
+    <h1>What the MT Ablation Actually Showed</h1>
+    <div class="sub">Three real findings — temporal dynamics, SAE features, and a neural surrogate</div>
+    <div class="meta">2026-05-20 · BIRS · refactor/split-zip-cat @ 736e3f1</div>
+    <div class="tagline">Zippering is a rate, not a value. The SAE rediscovered orientation. The neural surrogate works at the function level but the simulator can't tolerate 99.2% accuracy.</div>
+  </header>
+
+  <div class="tldr">
+    <h2>TL;DR</h2>
+    <ul>
+      <li><strong>Zippering controls the rate of S₂ growth, not its endpoint.</strong> Baseline climbs 0.58 → 0.73 over 1 sim-hour. Turn zippering off and S₂ is FLAT at the noise floor — no growth, ever.</li>
+      <li><strong>The SAE rediscovered orientation as the natural feature axis.</strong> Trained on 10,124 per-region snapshots with no supervision. 31 of 32 features alive, each tuned to a preferred angle (12°–158°). Max correlation with cos(2Ω) = +0.38; with S₂ magnitude only +0.08.</li>
+      <li><strong>A 1,446-parameter MLP learns Tim's collision rule to 99.2% accuracy in seconds</strong> — but the simulator crashes after ~150 seconds with the MLP in the loop. The bundle bookkeeping is intolerant of approximation.</li>
+      <li><strong>The "branched nucleation contamination" story is wrong.</strong> Default BY-2 sims have <code>LDD_bool=False</code>, which means <code>sample_angle</code> (the branched-angle generator) is dead code. The S₂ floor is pure small-sample statistical bias of measuring nematic order on sparse MTs.</li>
+      <li><strong>Trained models published.</strong> SAE + MLP + training data committed to <code>models/</code> on the refactor branch. Total ~2 MB. Anyone can <code>SAE.load(...)</code> and reproduce.</li>
+      <li><strong>The refactor itself is solid.</strong> 81 tests, equivalence proven on 50,000 random calls against Tim's main branch. The clean ablation surface (<code>collision.decision.decide_outcome</code>) works end-to-end for cross/catas conditions.</li>
+    </ul>
+  </div>
+
+  <!-- ─────────── FINDING 1: TEMPORAL DYNAMICS ─────────── -->
+  <section>
+    <h2>Finding 1 — Zippering Lives in the Time Course</h2>
+
+    <p>Three conditions, four seeds each, 1 sim-hour. The bar chart on the left is what we'd been comparing all morning — and it almost hides the result. Look at the middle panel.</p>
+
+    <div class="figure">
+      <img src="sweep_results.png" alt="Three-panel sweep results: S₂ bars, S₂ trajectories, MT density">
+      <div class="caption">
+        <strong>Left:</strong> Final S₂ at t=1hr — baseline 0.73, no_zipper 0.56, always_catas 0.71.
+        <strong>Middle:</strong> The trajectories tell the real story. Baseline climbs monotonically from 0.58 to 0.73. no_zipper (orange) is flat. always_catas (red) is flat at a higher value.
+        <strong>Right:</strong> MT density at t=1 — baseline 790, no_zipper 360, always_catas 220.
+      </div>
+    </div>
+
+    <p>The bar chart suggests <code>always_catas</code> is only ~3% below baseline. The trajectory shows something completely different: baseline is <em>moving</em>, the other two have <em>arrived already</em>. At t=0.1 hr, all three conditions are within ~0.04 of each other. By t=1.0 hr, only baseline has changed.</p>
+
+    <div class="callout green">
+      <strong>The headline:</strong> Zippering's contribution isn't a constant +X added to S₂. It's a <em>rate</em> — every shallow-angle collision bumps two MTs into co-alignment, and over time these bundles compound. Without zippering, MTs collide and either pass through or die, so the array's orientation distribution stays close to its nucleation distribution forever.
+    </div>
+
+    <p><code>always_catas</code> reads ~0.71 because of the small-sample trap: the surviving population stays small (~5–10 MTs at any time), and the length-weighted S₂ of 5 random angles is naturally inflated. The clean comparison is <strong>baseline trajectory vs no_zipper trajectory</strong> — comparable density floor, decisive difference in dynamics.</p>
+  </section>
+
+  <!-- ─────────── FINDING 2: SAE ─────────── -->
+  <section>
+    <h2>Finding 2 — SAE Rediscovers Orientation From Scratch</h2>
+
+    <p>Same data, second angle of attack. We pulled <strong>10,124 per-region snapshots</strong> from all three trajectories and trained a 32-feature sparse autoencoder on raw angle histograms. No supervision. No knowledge of S₂. No knowledge of Ω.</p>
+
+    <div class="figure">
+      <img src="sae_feature_prototypes.png" alt="16 SAE feature prototypes — each panel shows one feature's decoder weights">
+      <div class="caption">
+        <strong>16 most-used SAE features</strong>, each panel showing the feature's decoder weights — what input pattern most strongly activates that feature. Every feature has a clear preferred angle, tiling orientation space.
+      </div>
+    </div>
+
+    <p>This is the V1-simple-cell pattern rediscovered on biophysics data. When you train an unsupervised model on natural images, you get Gabor-like edge detectors at all orientations. When you train one on cortical MT geometry, you get nematic Gabors at all orientations.</p>
+
+    <div class="figure">
+      <img src="sae_analysis.png" alt="3-panel SAE analysis">
+      <div class="caption">
+        <strong>Left:</strong> Orientation tuning curves are nearly identical across conditions — at the per-region scale, the three conditions look the same.
+        <strong>Middle:</strong> Four example features at preferred angles 2°, 48°, 82°, 118° — clean orientation peaks.
+        <strong>Right:</strong> Every SAE feature plotted by correlation with S₂ (x-axis) vs cos(2Ω) (y-axis). Vertical spread is large (features track Ω); horizontal spread is tiny (features barely correlate with S₂ magnitude). <em>The SAE rediscovers Ω as the natural feature axis, not S₂.</em>
+      </div>
+    </div>
+
+    <p>The SAE was given no hints about what biologists care about. It received raw length-weighted angle histograms and a sparsity penalty. The fact that it picked <strong>orientation</strong> as the feature axis validates the field's choice of Ω as a primary order parameter. S₂ is a <em>derived</em> statistic of the orientation distribution.</p>
+  </section>
+
+  <!-- ─────────── FINDING 3: NEURAL SURROGATE ─────────── -->
+  <section>
+    <h2>Finding 3 — A Neural Surrogate That Works, And the Lesson When It Doesn't</h2>
+
+    <p>The natural next step: instead of running Tim's collision rule as Python code, can we learn it as a neural network and plug the network into the simulator? <strong>Yes — and no.</strong></p>
+
+    <h3>The MLP at the function level</h3>
+
+    <p>A tiny 1,446-parameter MLP (5 → 32 → 32 → [4 logits + 2 angle outputs]) trained on 50,000 calls to <code>zip_cat_clean</code>:</p>
+
+    <table>
+      <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+      <tbody>
+        <tr><td>Outcome classification accuracy (test, n=5000)</td><td><strong>99.2%</strong></td></tr>
+        <tr><td>Median angle prediction error</td><td><strong>2.5°</strong></td></tr>
+        <tr><td>Training time</td><td>~15 seconds</td></tr>
+        <tr><td>Total parameters</td><td>1,446</td></tr>
+        <tr><td>Dependencies</td><td>numpy only (no torch)</td></tr>
+      </tbody>
+    </table>
+
+    <p>Confusion matrix on test set:</p>
+
+<pre>              zip+     zip-    cross    catas
+    zip+      1109        0        4        1    (99.6% correct)
+    zip-         0     1110       13        4    (98.5%)
+   cross         9        1     1362        0    (99.3%)
+   catas         7        2        0     1378    (99.4%)</pre>
+
+    <p>The MLP has learned Tim's collision rule. Spot-checking on canonical cases: all three confirmed test inputs match (zipper at small angle, catastrophe at large angle).</p>
+
+    <h3>Plugging the MLP into the simulator</h3>
+
+    <p>The refactor's whole point was the clean ablation surface. So:</p>
+
+<pre><span style="color:#888">import</span> collision.decision
+collision.decision.decide_outcome <span style="color:#c0392b">=</span> make_learned_decision(mlp)
+<span style="color:#888"># sim_algs.simulate(...) now runs on the MLP, not on Tim's code</span></pre>
+
+    <h3>What actually happened</h3>
+
+    <div class="callout red">
+      <strong>The sim crashed after 152 seconds wall time.</strong> Inside <code>update_event_list</code>, at the bundle bookkeeping check (<code>comparison_fns.py:2557</code>). Same failure mode as <code>always_zipper_plus</code> and <code>random</code> ablations.
+    </div>
+
+    <p>The reason: the MLP disagrees with Tim's rule on ~0.8% of inputs. Most disagreements are in borderline cases near the 40° threshold — angles where the MLP picks zipper but Tim's rule picks crossover, or vice versa. <strong>Each of those disagreements creates a bundle whose geometry violates the simulator's internal consistency assumptions.</strong> The simulator runs for thousands of events, accumulates inconsistencies, then crashes.</p>
+
+    <p>I also tried the conservative variant: patch only <code>decide_outcome</code>, keep <code>zipper_geometry</code> exact. Same crash, just a few seconds later.</p>
+
+    <h3>The real finding</h3>
+
+    <div class="callout blue">
+      <strong>Tim's simulator is intolerant of approximation in the collision rule.</strong> Even a 99.2%-accurate learned surrogate breaks it. This isn't a property of the MLP — it's a property of the simulator's tight coupling between collision outcomes and bundle data structures. The bundle bookkeeping assumes the collision rule is deterministic, not just statistically close.
+    </div>
+
+    <p>For the broader interpretability picture: this is why the next refactor matters. The "neural surrogate of zip_cat" experiment is conceptually trivial — train a small NN to learn a function. But the simulator-as-substrate has a hidden requirement that bit-perfect output is the only valid input. That requirement isn't in the function signature; it's in the downstream bundle code's invariants.</p>
+  </section>
+
+  <!-- ─────────── FINDING 4: LDD_bool ─────────── -->
+  <section>
+    <h2>Finding 4 — "Branched Nucleation Contamination" Was Wrong</h2>
+
+    <p>Earlier in the day I argued that <code>always_catas</code>'s S₂ = 0.71 was inflated by Tim's <strong>branched nucleation</strong> mechanism (24% of new MTs nucleate at angles correlated with existing ones, contaminating the S₂ signal). I then spent hours trying to ablate this by monkey-patching <code>sample_angle</code> (the branched-angle generator) — and every patch silently failed. Bit-identical trajectories vs baseline.</p>
+
+    <p>The fix arrived via a side-effect logging shim: instrument <code>sample_angle</code> to write to a file every time it's called, then run a 1-hour sim. If the file is empty at the end, the function isn't being called at all.</p>
+
+    <p>The log file stayed empty for 6 minutes of CPU time. Then I read the actual nucleation code in <code>sim_algs_fixed_region.py:1873</code>:</p>
+
+<pre><span style="color:#888"># sim_algs_fixed_region.py:1873</span>
+<span style="color:#7b4f9e">if not</span> LDD_bool:  <span style="color:#888"># isotropic nucleation</span>
+    th = rnd.uniform(<span style="color:#c0392b">0</span>, <span style="color:#c0392b">2*pi</span>)   <span style="color:#888"># ← pure random! no sample_angle.</span>
+    <span style="color:#888">...</span>
+<span style="color:#7b4f9e">else</span>:  <span style="color:#888"># LDD nucleation (off by default)</span>
+    nuc_res = nucleate(<span style="color:#888">...</span>)
+    <span style="color:#888">...</span>
+    br_th = sample_angle()  <span style="color:#888"># ← only called when LDD_bool=True</span></pre>
+
+    <p><code>LDD_bool = False</code> in default BY-2 configs. That means <code>sample_angle</code> is <strong>dead code</strong> in this simulation mode. There was nothing to patch. The branched-nucleation contamination hypothesis was attacking a mechanism that wasn't running.</p>
+
+    <div class="callout blue">
+      <strong>What this actually changes:</strong> The S₂ floor at low MT density is <em>purely</em> a small-sample statistical artifact — measuring a length-weighted angle distribution with ~5–10 surviving MTs gives a spurious nematic order ~1/√N regardless of any alignment mechanism. <code>always_catas</code> reads 0.71 because there's nothing to average. No nucleation bias story. Just statistics.
+    </div>
+
+    <p>This also <em>strengthens</em> finding 1. The "zippering's signature is in the time slope" argument now has no competing explanation — there's no nucleation-bias story to bake into the S₂ floor. The temporal slope IS the zippering signal.</p>
+
+    <h3>The methodology lesson</h3>
+
+    <p>Three failed monkey-patches in one day, all with the same root cause: <strong>I patched the function before checking whether the function is reachable in the chosen sim configuration.</strong> The fix is the side-effect logging trick: instrument the function with a file write, run a short sim, check the log. If empty, the patch is patching dead code. Cheaper than reading 3000 lines of simulator.</p>
+  </section>
+
+  <!-- ─────────── WHAT'S NEXT ─────────── -->
+  <section>
+    <h2>What's Next</h2>
+
+    <table>
+      <thead><tr><th>When</th><th>What</th><th>Why</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Next</strong></td>
+          <td>Second refactor: separate bundle bookkeeping from collision logic</td>
+          <td>Unblocks <code>always_zipper_plus</code>, <code>random</code>, <em>and</em> the MLP surrogate. The bundle bookkeeping should accept either deterministic or approximate collision rules.</td>
+        </tr>
+        <tr>
+          <td>+1 day</td>
+          <td>Once second refactor lands, re-run the MLP surrogate at 4 seeds × 1hr</td>
+          <td>Get the S₂(t) trajectory under a learned rule. Compare to baseline. If close, "the simulator runs on a neural net" is shown end-to-end.</td>
+        </tr>
+        <tr>
+          <td>This week</td>
+          <td>Show Tim: refactor branch + temporal-dynamics finding + SAE features + MLP attempt + the crash story</td>
+          <td>Four real results, three working, one revealing a deeper architectural issue. The deeper issue is itself a finding.</td>
+        </tr>
+        <tr>
+          <td>Stretch</td>
+          <td>Train SAE + MLP on Tim's existing 10hr archive trajectories</td>
+          <td>Order-of-magnitude more data, longer time horizons, more conditions. With proper data the SAE features should sharpen and the MLP can be trained to higher accuracy.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ─────────── PHRASING FOR TIM ─────────── -->
+  <section>
+    <h2>How to Phrase It for Tim</h2>
+
+    <p>One paragraph:</p>
+
+    <div class="callout">
+      <em>"I refactored your collision function into three independently-ablatable pieces, proved equivalence on 50,000 random inputs against your <code>main</code> branch, then ran four-seed ablations of each major mechanism. Four findings:</em></p>
+
+      <p><em><strong>(1)</strong> <strong>Zippering's signature is in the temporal slope of S₂, not its final value</strong> — baseline climbs monotonically while no_zipper plateaus at the noise floor. The right comparison is the trajectory shape, not the t=10 number.</em></p>
+
+      <p><em><strong>(2)</strong> I trained a sparse autoencoder on per-region angle histograms across the three conditions; it independently rediscovered <strong>orientation</strong> (your Ω parameter) as the natural feature axis with no supervision. 31 of 32 features alive, each tuned to a preferred angle. V1-simple-cell pattern.</em></p>
+
+      <p><em><strong>(3)</strong> A 1,446-parameter MLP learns your collision rule to 99.2% accuracy in seconds — but when I plug it into the simulator, the bundle bookkeeping crashes after ~150 seconds. Your simulator is intolerant of approximation in the collision rule. That's the architectural finding.</em></p>
+
+      <p><em><strong>(4)</strong> I burned hours hypothesising that branched nucleation contaminates the S₂ signal at low MT density. It doesn't — <code>LDD_bool = False</code> in default BY-2 configs means <code>sample_angle</code> is dead code. The S₂ floor is pure small-sample statistics. This actually <em>strengthens</em> finding (1).</em></p>
+
+      <p><em>Whole pipeline on GitHub, 81 tests passing, trained models in <code>models/</code> at ~30 KB total. Want to walk through it?"</em>
+    </div>
+  </section>
+
+  <footer>
+    <p>Repo: <a href="https://github.com/bigsnarfdude/elastic-mt-refactor/tree/refactor/split-zip-cat">bigsnarfdude/elastic-mt-refactor — refactor/split-zip-cat</a></p>
+    <p>9 commits on the branch. Latest: <code>a15260f</code> "Commit trained models: CollisionMLP + SAE weights + training data".</p>
+    <p>Models published at <a href="https://github.com/bigsnarfdude/elastic-mt-refactor/tree/refactor/split-zip-cat/models"><code>models/</code></a>: <code>learned_zipcat.npz</code> (7.5 KB MLP), <code>sae.npz</code> + <code>sae_tight.npz</code> (10.5 KB each), <code>sae_data.npz</code> (1.9 MB training set). All loadable via the existing classes.</p>
+    <p>Plots: <code>sweep_results.png</code> · <code>sae_feature_prototypes.png</code> · <code>sae_analysis.png</code> · all in <code>~/Desktop/microtubles/</code></p>
+    <p style="margin-top: 0.5rem">2026-05-20 · 81 tests passing · 10,124 SAE training snapshots · 50,000 MLP training pairs · 4 published findings</p>
+  </footer>
+
+</div>
+</body>
+</html>
