@@ -40,6 +40,8 @@
   .callout.red   { background: #fff5f5; border-left-color: #c0392b; }
   .callout strong { color: #111; }
   pre { background: #f4f6f8; border: 1px solid #dde; border-radius: 5px; padding: 0.75rem 1rem; font-family: "SF Mono","Fira Code","Consolas",monospace; font-size: 0.83rem; overflow-x: auto; color: #222; line-height: 1.5; margin: 0.5rem 0 1rem; }
+  .lede { background: #f9f9fd; border-left: 3px solid #2c5aa0; padding: 0.7rem 1rem; margin: 0.5rem 0 1.25rem; font-size: 0.96rem; color: #222; border-radius: 0 4px 4px 0; }
+  .lede strong { color: #2c5aa0; }
   footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #dde; font-size: 0.8rem; color: #999; font-family: "SF Mono","Fira Code","Consolas",monospace; }
   footer a { color: #2c5aa0; text-decoration: none; }
 </style>
@@ -70,18 +72,19 @@
   <section>
     <h2>Finding 1 — Zippering Lives in the Time Course</h2>
 
-    <p>Three conditions, four seeds each, 1 sim-hour. The bar chart on the left is what we'd been comparing all morning — and it almost hides the result. Look at the middle panel.</p>
+    <p class="lede"><strong>In one sentence:</strong> the static S₂ at t=1 is the same in baseline and always_catas because static S₂ at low density is dominated by sample noise; the real zippering signal is in the temporal slope of S₂, not its value.</p>
+
+    <p>Three conditions, four seeds each, 1 sim-hour.</p>
 
     <div class="figure">
-      <img src="sweep_results.png" alt="Three-panel sweep results: S₂ bars, S₂ trajectories, MT density">
+      <img src="sweep_results.png" alt="S₂ trajectory by condition + MT density bar chart">
       <div class="caption">
-        <strong>Left:</strong> Final S₂ at t=1hr — baseline 0.73, no_zipper 0.56, always_catas 0.71.
-        <strong>Middle:</strong> The trajectories tell the real story. Baseline climbs monotonically from 0.58 to 0.73. no_zipper (orange) is flat. always_catas (red) is flat at a higher value.
-        <strong>Right:</strong> MT density at t=1 — baseline 790, no_zipper 360, always_catas 220.
+        <strong>Left (trajectory):</strong> Each thin line is one seed; thick line is the mean. Baseline (green) climbs monotonically from 0.58 to 0.73. no_zipper (orange) sits at the noise floor ~0.56 — completely flat. always_catas (red) sits at a different noise floor ~0.71 — also flat. The static value of S₂ at t=1 is uninformative; the <em>slope</em> is the zippering signal.
+        <strong>Right (density):</strong> MT density at t=1 — baseline 790, no_zipper 360, always_catas 220. The density gradient explains the static-S₂ gradient: fewer MTs → noisier per-region order → higher spurious S₂.
       </div>
     </div>
 
-    <p>The bar chart suggests <code>always_catas</code> is only ~3% below baseline. The trajectory shows something completely different: baseline is <em>moving</em>, the other two have <em>arrived already</em>. At t=0.1 hr, all three conditions are within ~0.04 of each other. By t=1.0 hr, only baseline has changed.</p>
+    <p>At t=0.1 hr all three conditions are within ~0.04 of each other (~0.56–0.70). By t=1.0 hr, <em>only baseline has moved.</em> Same starting noise floor, decisive difference in dynamics.</p>
 
     <div class="callout green">
       <strong>The headline:</strong> Zippering's contribution isn't a constant +X added to S₂. It's a <em>rate</em> — every shallow-angle collision bumps two MTs into co-alignment, and over time these bundles compound. Without zippering, MTs collide and either pass through or die, so the array's orientation distribution stays close to its nucleation distribution forever.
@@ -93,6 +96,8 @@
   <!-- ─────────── FINDING 2: SAE ─────────── -->
   <section>
     <h2>Finding 2 — SAE Rediscovers Orientation From Scratch</h2>
+
+    <p class="lede"><strong>In one sentence:</strong> an unsupervised SAE trained on raw MT geometry independently picks orientation (your Ω parameter) as the natural feature axis — confirming that Ω, not S₂, is the primitive description and S₂ is a derived statistic.</p>
 
     <p>Same data, second angle of attack. We pulled <strong>10,124 per-region snapshots</strong> from all three trajectories and trained a 32-feature sparse autoencoder on raw angle histograms. No supervision. No knowledge of S₂. No knowledge of Ω.</p>
 
@@ -119,9 +124,11 @@
 
   <!-- ─────────── FINDING 3: NEURAL SURROGATE ─────────── -->
   <section>
-    <h2>Finding 3 — A Neural Surrogate That Works, And the Lesson When It Doesn't</h2>
+    <h2>Finding 3 — A 99.2%-Accurate Surrogate Still Breaks the Simulator</h2>
 
-    <p>The natural next step: instead of running Tim's collision rule as Python code, can we learn it as a neural network and plug the network into the simulator? <strong>Yes — and no.</strong></p>
+    <p class="lede"><strong>In one sentence:</strong> a 1,446-parameter MLP learns Tim's collision rule to 99.2% accuracy in seconds, but plugging it into the simulator crashes the bundle bookkeeping after ~150 seconds — the simulator is intolerant of approximation, which is the deeper architectural finding.</p>
+
+    <p>The natural next step: instead of running Tim's collision rule as Python code, can we learn it as a neural network and plug the network into the simulator? <strong>Yes at the function level — no end-to-end.</strong></p>
 
     <h3>The MLP at the function level</h3>
 
@@ -177,7 +184,9 @@ collision.decision.decide_outcome <span style="color:#c0392b">=</span> make_lear
 
   <!-- ─────────── FINDING 4: LDD_bool ─────────── -->
   <section>
-    <h2>Finding 4 — "Branched Nucleation Contamination" Was Wrong</h2>
+    <h2>Finding 4 — The S₂ Floor Is Pure Statistics, No Nucleation Story</h2>
+
+    <p class="lede"><strong>In one sentence:</strong> the apparent S₂ floor of ~0.55–0.71 at low MT density is small-sample statistical bias (length-weighted nematic order with ~5–10 MTs is naturally ~1/√N) — there is no competing "branched nucleation contamination" story because branched nucleation doesn't even fire in default BY-2 mode.</p>
 
     <p>Earlier in the day I argued that <code>always_catas</code>'s S₂ = 0.71 was inflated by Tim's <strong>branched nucleation</strong> mechanism (24% of new MTs nucleate at angles correlated with existing ones, contaminating the S₂ signal). I then spent hours trying to ablate this by monkey-patching <code>sample_angle</code> (the branched-angle generator) — and every patch silently failed. Bit-identical trajectories vs baseline.</p>
 
@@ -205,6 +214,25 @@ collision.decision.decide_outcome <span style="color:#c0392b">=</span> make_lear
     <h3>The methodology lesson</h3>
 
     <p>Three failed monkey-patches in one day, all with the same root cause: <strong>I patched the function before checking whether the function is reachable in the chosen sim configuration.</strong> The fix is the side-effect logging trick: instrument the function with a file write, run a short sim, check the log. If empty, the patch is patching dead code. Cheaper than reading 3000 lines of simulator.</p>
+  </section>
+
+  <!-- ─────────── OPEN QUESTIONS / CAVEATS ─────────── -->
+  <section>
+    <h2>Open Questions &amp; Caveats</h2>
+
+    <p>Front-footing the weaknesses so the conversation can move past them:</p>
+
+    <ul>
+      <li><strong>n=1 for the SAE and MLP.</strong> The SAE training data and MLP training pairs are all from seed=42. The 4-seed statistics only apply to the S₂ trajectory comparison. A multi-seed retraining of both models is the natural next step — neither model is expensive (seconds of training).</li>
+      <li><strong>t=1, not at saturation.</strong> Tim's thesis runs to 10 sim-hours and presumably saturates higher than 0.73. Our 1-hour comparison shows the <em>slope</em> finding cleanly but doesn't speak to long-time behavior. The 10× longer runs should sharpen everything — particularly whether always_catas's static S₂ erodes over time or stays anchored.</li>
+      <li><strong>Default BY-2 only.</strong> All experiments used <code>plant='by2'</code> + <code>LDD_bool=False</code>. The Arabidopsis 3-state DI config (<code>plant='arth'</code>) and the LDD nucleation mode are entirely untested. Tim's thesis likely has both — replicating the findings there would be the proper validation.</li>
+      <li><strong>Bundle bookkeeping refactor is still pending.</strong> The 2nd refactor (separate bundle state from collision logic) is what would unblock <code>always_zipper_plus</code>, <code>random</code>, the MLP surrogate, and probably <code>deflect_on=False</code>. We have not done it. Without it, several ablations of theoretical interest can't run.</li>
+      <li><strong>No comparison to Tim's published numbers.</strong> The S₂ trajectory we measure (0.58 → 0.73 over 1 hour) hasn't been cross-validated against his thesis or papers. If his published baseline differs significantly from ours, we have to explain the gap before claiming anything.</li>
+    </ul>
+
+    <div class="callout">
+      <strong>Note on the v2 proposal:</strong> the <code>GH200_PROPOSAL_V2.md</code> document we wrote earlier today is now partially obsolete. Its Phase 2 (2×2 nucleation control via <code>sample_angle</code> patch) attacks a mechanism that doesn't run in default BY-2 mode — finding 4 above. Phases 1 (distributional equivalence at 30 seeds × 10hr) and 4 (SAE on richer data) remain valid and should be the focus when remote compute returns.
+    </div>
   </section>
 
   <!-- ─────────── WHAT'S NEXT ─────────── -->
