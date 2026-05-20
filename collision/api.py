@@ -4,11 +4,22 @@ This function has the same signature and same 5-tuple return as Tim's
 original ``zippering.zip_cat``. It exists so that ``sim_algs_fixed_region``
 can adopt the refactor with zero change to its call sites.
 
-Once the refactor lands, ``zippering.zip_cat`` becomes a one-line forward
-to this function.
+The refactored ablation pattern depends on **late binding**: this module
+imports the *modules*, not the *functions* by name. That way, a runtime
+monkey-patch like
+
+    >>> import collision.decision
+    >>> collision.decision.decide_outcome = my_alternative
+
+actually takes effect, because ``zip_cat_clean`` looks up
+``decision.decide_outcome`` at call time, not at import time.
+
+If you change ``from . import decision`` to ``from .decision import
+decide_outcome``, the patching surface silently breaks. The unit test
+``tests/test_patch_surface.py`` enforces this invariant.
 """
-from .decision import decide_outcome, incident_angle
-from .geometry import zipper_geometry, step_back_offset
+from . import decision   # NOTE: module import (late binding) — see docstring
+from . import geometry   # NOTE: module import (late binding) — see docstring
 
 
 def zip_cat_clean(angle1, angle2, pt, pt_prev, r,
@@ -38,18 +49,20 @@ def zip_cat_clean(angle1, angle2, pt, pt_prev, r,
     (new_angle, new_pt, outcome, col_pt, error)
         Matches the original ``zip_cat`` 5-tuple contract.
     """
-    outcome = decide_outcome(angle1, angle2, r)
+    # Late-bound lookups — monkey-patching the module attribute Just Works.
+    outcome = decision.decide_outcome(angle1, angle2, r)
 
     if outcome in ('zipper+', 'zipper-'):
-        new_angle, label = zipper_geometry(angle1, angle2)
-        # The label from zipper_geometry is the source of truth.
-        # decide_outcome agrees with it by construction.
-        assert label == outcome, (
-            f"internal inconsistency: decision said {outcome}, "
-            f"geometry said {label}"
-        )
+        new_angle, label = geometry.zipper_geometry(angle1, angle2)
+        # In normal (un-patched) operation the decision and the geometry
+        # agree on the zipper sign by construction. If a user has patched
+        # decide_outcome to force a sign that the geometry disagrees with,
+        # trust the decision and use the geometry-computed new_angle as-is.
+        # (Most ablation tools will patch decide_outcome, not the geometry.)
         if no_bdl_id:
-            dx, dy = step_back_offset(angle1, incident_angle(angle1, angle2), d)
+            dx, dy = geometry.step_back_offset(
+                angle1, decision.incident_angle(angle1, angle2), d
+            )
             new_pt = [pt[0] + dx, pt[1] + dy]
             col_pt = [pt[0] + dx, pt[1] + dy]
         else:
