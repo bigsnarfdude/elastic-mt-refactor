@@ -78,8 +78,50 @@ def aggregate_regions(order_pickle_data) -> np.ndarray:
 
 
 def load_trajectory(pickle_path) -> np.ndarray:
-    """Load one orderp_*.pickle and convert to a (T, n_bins) snapshot array."""
+    """Load one orderp_*.pickle and convert to a (T, n_bins) snapshot array.
+
+    Returns one aggregated histogram per saved time point, pooled across
+    spatial regions. Good for trajectory-level analysis.
+    """
     import pickle
     with open(pickle_path, 'rb') as f:
         data = pickle.load(f)
     return aggregate_regions(data)
+
+
+def load_per_region(pickle_path, min_mt_len=0.01) -> tuple:
+    """Load per-region snapshots — each spatial region becomes its own sample.
+
+    This gives orders of magnitude more training data than ``load_trajectory``
+    because each saved time point contributes ~grid_l × grid_w regions instead
+    of one aggregated histogram.
+
+    Parameters
+    ----------
+    pickle_path : Path
+        Path to an orderp_*.pickle file.
+    min_mt_len : float
+        Skip regions with less than this total MT length. Avoids feeding
+        empty / near-empty regions to the SAE (their histograms are all-zero
+        and uninformative).
+
+    Returns
+    -------
+    snaps : np.ndarray of shape (N_regions, n_bins)
+        Per-region length-weighted histograms.
+    meta : list of dict
+        Per-snapshot metadata: {'time': float, 'region_idx': int, 'mt_len': float}
+    """
+    import pickle
+    with open(pickle_path, 'rb') as f:
+        order, order_t = pickle.load(f)
+
+    snaps, meta = [], []
+    for t_idx, region_list in enumerate(order):
+        t = float(order_t[t_idx]) if t_idx < len(order_t) else float('nan')
+        for r_idx, geom in enumerate(region_list):
+            if not (geom and len(geom) >= 3 and geom[2] > min_mt_len):
+                continue
+            snaps.append(snapshot_vector(geom))
+            meta.append({'time': t, 'region_idx': r_idx, 'mt_len': float(geom[2])})
+    return np.array(snaps, dtype=np.float32), meta
