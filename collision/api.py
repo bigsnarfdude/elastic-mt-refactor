@@ -53,12 +53,12 @@ def zip_cat_clean(angle1, angle2, pt, pt_prev, r,
     outcome = decision.decide_outcome(angle1, angle2, r)
 
     if outcome in ('zipper+', 'zipper-'):
-        new_angle, label = geometry.zipper_geometry(angle1, angle2)
-        # In normal (un-patched) operation the decision and the geometry
-        # agree on the zipper sign by construction. If a user has patched
-        # decide_outcome to force a sign that the geometry disagrees with,
-        # trust the decision and use the geometry-computed new_angle as-is.
-        # (Most ablation tools will patch decide_outcome, not the geometry.)
+        # Pass the outcome label to geometry so the new_angle is consistent
+        # with the chosen direction. This matters when decide_outcome has
+        # been monkey-patched to force a label different from what the
+        # natural (closer-alignment) geometry would have picked. See
+        # tests/test_patch_label_geometry_consistency.py for the contract.
+        new_angle, _ = geometry.zipper_geometry(angle1, angle2, outcome=outcome)
         if no_bdl_id:
             dx, dy = geometry.step_back_offset(
                 angle1, decision.incident_angle(angle1, angle2), d

@@ -76,7 +76,8 @@ def test_patch_zipper_geometry():
     from collision.api import zip_cat_clean
 
     # Patch geometry to return a fixed angle. Decision (small angle) still says zipper+.
-    collision.geometry.zipper_geometry = lambda a1, a2: (3.14159, 'zipper+')
+    # NOTE: api passes outcome as a kwarg, so the patch must accept it.
+    collision.geometry.zipper_geometry = lambda a1, a2, outcome=None: (3.14159, 'zipper+')
 
     out = zip_cat_clean(0.1, 0.2, [0.5, 0.5], [0.4, 0.4], 0)
     assert out[2] == 'zipper+', f"decision unchanged, should still be zipper+ got {out[2]}"

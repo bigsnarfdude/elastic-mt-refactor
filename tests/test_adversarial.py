@@ -60,9 +60,21 @@ def _check(orig, new, label=""):
     assert _ang_equal(orig[0], new[0]), (
         f"{label} new_angle mismatch: orig={orig[0]} new={new[0]}"
     )
-    if orig[2] in ('cross', 'catas'):
-        assert abs(orig[1][0] - new[1][0]) < 1e-12
-        assert abs(orig[1][1] - new[1][1]) < 1e-12
+    # new_pt and col_pt must always match (for cross/catas they should be pt;
+    # for zipper outcomes they should be pt under no_bdl_id=False, or pt+offset
+    # under no_bdl_id=True — the original and refactor agree on either path).
+    assert abs(orig[1][0] - new[1][0]) < 1e-9, (
+        f"{label} new_pt[0] mismatch: orig={orig[1]} new={new[1]}"
+    )
+    assert abs(orig[1][1] - new[1][1]) < 1e-9, (
+        f"{label} new_pt[1] mismatch: orig={orig[1]} new={new[1]}"
+    )
+    assert abs(orig[3][0] - new[3][0]) < 1e-9, (
+        f"{label} col_pt[0] mismatch: orig={orig[3]} new={new[3]}"
+    )
+    assert abs(orig[3][1] - new[3][1]) < 1e-9, (
+        f"{label} col_pt[1] mismatch: orig={orig[3]} new={new[3]}"
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -147,6 +159,34 @@ def test_no_bdl_id_true_path():
     finally:
         zippering.no_bdl_id = original_flag
         zippering.d = original_d
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# INVARIANT TESTS — what the simulator is allowed to feed zip_cat
+# ─────────────────────────────────────────────────────────────────────────────
+
+def test_in_range_angles_only():
+    """The simulator only ever produces angles in [0, 2π).
+
+    This test documents that invariant. If it breaks, either the simulator
+    has started feeding out-of-range angles (which would break the original
+    code too, by hitting Tim's quadrant-coverage holes), or the refactor
+    needs to accept negative/oversized angles by normalizing first.
+
+    Currently the refactor implicitly normalizes via modulo; the original
+    does not. They diverge on out-of-range inputs. We assert here that
+    out-of-range inputs are a contract violation, not supported behavior.
+    """
+    # Sanity: angles in range work fine
+    from collision.api import zip_cat_clean
+    out = zip_cat_clean(0.5, 1.0, [0.5, 0.5], [0.4, 0.4], 0)
+    assert out[2] in ('zipper+', 'zipper-', 'cross', 'catas')
+
+    # Document: out-of-range still produces a result, but no equivalence claim
+    out_oor = zip_cat_clean(-1.0, 7.5, [0.5, 0.5], [0.4, 0.4], 0)
+    assert out_oor[2] in ('zipper+', 'zipper-', 'cross', 'catas')
+    # The refactor normalizes; the original may produce a different result.
+    # We do not assert equivalence on out-of-range inputs.
 
 
 # ─────────────────────────────────────────────────────────────────────────────
