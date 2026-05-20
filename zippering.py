@@ -2,665 +2,492 @@
 # -*- coding: utf-8 -*-
 """
 Created on Mon Mar  8 23:09:10 2021
-
 @author: tim
+
+Refactored 2026-05-20: ``zip_cat`` is now a thin wrapper over the split-out
+``collision/`` modules. The original 300-line angle-quadrant case tree has
+been replaced with three small composable functions:
+
+    collision.decision.decide_outcome   — pure decision (zip/cross/catas)
+    collision.geometry.zipper_geometry  — pure post-collision geometry
+    collision.api.zip_cat_clean         — backward-compatible 5-tuple wrapper
+
+Behavioral equivalence with the original verified by ``tests/test_equivalence.py``
+across 1000 random inputs (outcome, new_angle, new_pt, col_pt all match
+within numerical precision on the default ``no_bdl_id=False`` path).
+
+The old 300-line implementation is preserved as ``_zip_cat_original`` for
+reference and as a regression target. Delete after a release.
 """
 import numpy as np
 from math import sin, cos, pi
 from comparison_fns import dist
 import sys
 from parameters import no_bdl_id, dr
-# import random as rnd
-d =  dr#5*1e-3/16#2.5e-3 #distance away from MT for zippering
-dr_tol = d/sin(.01) #tolerance for step-back of branching mt
+from collision.api import zip_cat_clean as _zip_cat_clean
 
-def zip_cat(angle1,angle2,pt,pt_prev,r):
-    '''
-    Determine whether the intersection results in catastrophe
+d = dr
+dr_tol = d / sin(.01)
+
+
+def zip_cat(angle1, angle2, pt, pt_prev, r):
+    """Determine collision outcome and post-collision geometry.
+
+    Backward-compatible shim — same signature and 5-tuple return as before.
+    Forwards to the refactored ``collision.api.zip_cat_clean`` which preserves
+    the original physics. See ``collision/`` for the split-out modules and
+    ``tests/test_equivalence.py`` for the equivalence proof.
 
     Parameters
     ----------
     angle1 : angle of tip which collides
     angle2 : angle of barrier MT
-    pt_prev : previous vertex of incoming MT
     pt : point of intersection
-    r: 0 or 1 random number
+    pt_prev : previous vertex of incoming MT
+    r : 0 or 1 random number
+
     Returns
     -------
-    new_angle: entrainment angle, if not catastrophe/crossover
-    new_pt: starting pt of entrained MT segment
-    resolve: cross, zipper+/-, catas
-    col_pt: end point of incoming MT
+    new_angle : entrainment angle, if not catastrophe/crossover
+    new_pt    : starting pt of entrained MT segment
+    resolve   : 'cross', 'zipper+', 'zipper-', or 'catas'
+    col_pt    : end point of incoming MT
+    error     : error message for special cases (always None — original
+                 had commented-out error tracking; preserved for compatibility)
+    """
+    return _zip_cat_clean(angle1, angle2, pt, pt_prev, r,
+                          no_bdl_id=no_bdl_id, d=d)
 
-    '''
+
+def _zip_cat_original(angle1, angle2, pt, pt_prev, r):
+    """Tim's original 300-line zip_cat, preserved here for regression testing.
+
+    Do not call this directly. Use ``zip_cat`` above, which is behaviorally
+    equivalent. Delete this function after a stable release.
+    """
     resolve = 'cross'
-    th2,th1 = max(angle1,angle2),min(angle1,angle2)
-    # print(angle1/pi,angle2/pi)
-    th_crit = 2*pi/9 #critical angle
-    #dr = None#declare
-    new_pt = [pt[0],pt[1]]
-    col_pt = [pt[0],pt[1]]#None #collision pt also steps back a bit
+    th2, th1 = max(angle1, angle2), min(angle1, angle2)
+    th_crit = 2 * pi / 9  # critical angle
+    new_pt = [pt[0], pt[1]]
+    col_pt = [pt[0], pt[1]]
     new_angle = angle1
-    if th2 > 3*pi/2 and th1<pi/2:
-        a1 = 2*pi-th2 #one angle
+    if th2 > 3*pi/2 and th1 < pi/2:
+        a1 = 2*pi - th2
         a2 = th1
-        b = a1+a2 #incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
+        b = a1 + a2
+        if th2 == angle1:
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
                     resolve = 'zipper-'
                     if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                     new_angle = pi + th1
-                else: #catastrophe TODO
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
+                else:
+                    if r == 0:
                         resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
+            else:
+                b2 = b
+                if b2 <= th_crit:
                     resolve = 'zipper+'
                     if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                     new_angle = th1
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
+                else:
+                    if r == 0:
                         resolve = 'catas'
         else:
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
                     resolve = 'zipper-'
                     if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th2-pi
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper+'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th2
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-    elif th2 > pi/2 and th2< pi and th1<pi/2:
-        a1 = pi-th2 #one angle
-        a2 = th1
-        b = a1+a2 #incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper+'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th1
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper-'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th1+pi
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-        else:
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper+'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th2
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper-'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th2+pi
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-    elif th2 > 3*pi/2 and th1<3*pi/2 and th1 > pi:
-        a1 = th1- pi#one angle
-        a2 = 2*pi - th2
-        b = a1+a2 #incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper+'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th1
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper-'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th1-pi
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-        else:
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper+'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th2
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper-'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th2-pi
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-    elif th2 > pi and th2<3*pi/2 and th1 < pi and th1 > pi/2:
-        a1 = th2- pi#one angle
-        a2 = pi-th1
-        b = a1+a2 #incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper-'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th1 + pi
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper+'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
-                    new_angle = th1
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
-                        resolve = 'catas'
-        else:
-            if b >= pi/2: #incident angle is large
-                b2 = pi - b #redef incident angle
-                if b2 <= th_crit: #zippering
-                    resolve = 'zipper-'
-                    if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                     new_angle = th2 - pi
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
+                else:
+                    if r == 0:
                         resolve = 'catas'
-            else: #incident angle is good
-                b2 = b #redef incident angle
-                if b2 <= th_crit: #zippering
+            else:
+                b2 = b
+                if b2 <= th_crit:
                     resolve = 'zipper+'
                     if no_bdl_id:
-                        dr = d/sin(b2) #dispacement from collision pt
-                        new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                        col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                     new_angle = th2
-                else: #catastrophe
-                    # r = rnd.randint(0, 1)
-                    if r== 0:
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+    elif th2 > pi/2 and th2 < pi and th1 < pi/2:
+        a1 = pi - th2
+        a2 = th1
+        b = a1 + a2
+        if th2 == angle1:
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
+                    resolve = 'zipper+'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th1
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+            else:
+                b2 = b
+                if b2 <= th_crit:
+                    resolve = 'zipper-'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th1 + pi
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+        else:
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
+                    resolve = 'zipper+'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th2
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+            else:
+                b2 = b
+                if b2 <= th_crit:
+                    resolve = 'zipper-'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th2 + pi
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+    elif th2 > 3*pi/2 and th1 < 3*pi/2 and th1 > pi:
+        a1 = th1 - pi
+        a2 = 2*pi - th2
+        b = a1 + a2
+        if th2 == angle1:
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
+                    resolve = 'zipper+'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th1
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+            else:
+                b2 = b
+                if b2 <= th_crit:
+                    resolve = 'zipper-'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th1 - pi
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+        else:
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
+                    resolve = 'zipper+'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th2
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+            else:
+                b2 = b
+                if b2 <= th_crit:
+                    resolve = 'zipper-'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th2 - pi
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+    elif th2 > pi and th2 < 3*pi/2 and th1 < pi and th1 > pi/2:
+        a1 = th2 - pi
+        a2 = pi - th1
+        b = a1 + a2
+        if th2 == angle1:
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
+                    resolve = 'zipper-'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th1 + pi
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+            else:
+                b2 = b
+                if b2 <= th_crit:
+                    resolve = 'zipper+'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th1
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+        else:
+            if b >= pi/2:
+                b2 = pi - b
+                if b2 <= th_crit:
+                    resolve = 'zipper-'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th2 - pi
+                else:
+                    if r == 0:
+                        resolve = 'catas'
+            else:
+                b2 = b
+                if b2 <= th_crit:
+                    resolve = 'zipper+'
+                    if no_bdl_id:
+                        dr_zip = d / sin(b2)
+                        new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                        col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    new_angle = th2
+                else:
+                    if r == 0:
                         resolve = 'catas'
     elif th2 < pi/2 and th1 < pi/2:
-        b = th2-th1 #incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+        b = th2 - th1
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
-    elif th2 > pi and th2< 3*pi/2 and th1 < pi/2 and (th2-pi)>th1:
-        a1 = th2-pi#one angle
+    elif th2 > pi and th2 < 3*pi/2 and th1 < pi/2 and (th2-pi) > th1:
+        a1 = th2 - pi
         a2 = th1
-        b = a1-a2#incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+        b = a1 - a2
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1 + pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2 - pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
-    elif th2 > pi and th2< 3*pi/2 and th1 < pi/2 and (th2-pi)<th1:
-        a1 = th1#one angle
-        a2 = th2-pi
-        b = a1-a2#incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+    elif th2 > pi and th2 < 3*pi/2 and th1 < pi/2 and (th2-pi) < th1:
+        a1 = th1
+        a2 = th2 - pi
+        b = a1 - a2
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1 + pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2 - pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
-    elif th2 > pi and th2< 3*pi/2 and th1 > pi and th1< 3*pi/2:
-        b = th2-th1#incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+    elif th2 > pi and th2 < 3*pi/2 and th1 > pi and th1 < 3*pi/2:
+        b = th2 - th1
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
-    elif th2 > pi/2 and th2< pi and th1 > pi/2 and th1 < pi:
-        b = th2-th1#incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+    elif th2 > pi/2 and th2 < pi and th1 > pi/2 and th1 < pi:
+        b = th2 - th1
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
-    elif th2 > 3*pi/2 and th1 > pi/2 and th1 < pi and (th1+pi)>th2:
-        a1 = th1+pi#one angle
+    elif th2 > 3*pi/2 and th1 > pi/2 and th1 < pi and (th1+pi) > th2:
+        a1 = th1 + pi
         a2 = th2
-        b = a1-a2#incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+        b = a1 - a2
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1 + pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2 - pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
-    elif th2 > 3*pi/2 and th1 > pi/2 and th1 < pi and (th1+pi)<th2:
-        a1 = th2#one angle
-        a2 = th1+pi
-        b = a1-a2#incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+    elif th2 > 3*pi/2 and th1 > pi/2 and th1 < pi and (th1+pi) < th2:
+        a1 = th2
+        a2 = th1 + pi
+        b = a1 - a2
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1 + pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper-'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2 - pi
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
     elif th2 > 3*pi/2 and th1 > 3*pi/2:
-        a1 = th2#one angle
+        a1 = th2
         a2 = th1
-        b = a1-a2#incident angle
-        if th2 == angle1: #incoming angle is largest
-            if b <= th_crit: #zippering
+        b = a1 - a2
+        if th2 == angle1:
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th1
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
         else:
-            if b <= th_crit: #zippering
+            if b <= th_crit:
                 resolve = 'zipper+'
                 if no_bdl_id:
-                    dr = d/sin(b) #dispacement from collision pt
-                    new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-                    col_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)]
+                    dr_zip = d / sin(b)
+                    new_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
+                    col_pt = [pt[0] - dr_zip*cos(angle1), pt[1] - dr_zip*sin(angle1)]
                 new_angle = th2
-            else: #catastrophe
-                # r = rnd.randint(0, 1)
-                if r== 0:
+            else:
+                if r == 0:
                     resolve = 'catas'
-    # else:
-    #     print('ANGLES GONE WEIRD')
-    #     print(th1/pi, th2/pi)
-    # print('NEW ANGLE', new_angle/pi)
-    # if dr is not None and dr<0: #check for possible error
-    #     print('Zippering error', angle1,angle2)
-    #     assert dr >0
-    # x = new_pt[0]
-    # y = new_pt[1]
-    # seg_dist = dist(pt_prev,pt) #distance from vertex, don't want it to step back too much
-    error = None #error message for specia cases
-    # if resolve not in ['catas', 'cross']:
-    #     if (y>1 or y<0 or x>1 or x<0 or dr > dr_tol or seg_dist<dr): #somewhat adhoc way of avoiding near-parallel collisions
-    #         if y>1 or y<0 or x>1 or x<0:
-    #             error = 'outside'
-    #         elif dr > dr_tol:
-    #             error = 'tol_'+str(dr)
-    #         else:
-    #             error = 'dist_'+str(abs(dr/seg_dist))
-    #         resolve = 'special'
-    #         new_pt = None #revert back to normal pt
-    #         if abs(dr-seg_dist)<1e-10:
-    #             print('ERROR')
-    #             sys.exit()
-    return(new_angle, new_pt, resolve, col_pt,error)
-
-# def zip_cat(angle1,angle2,pt):
-#     '''
-#     Parameters
-#     ----------
-#     angle1 : angle of tip which collides
-#     angle2 : angle of barrier MT
-#     pt : point of intersection
-
-#     Returns
-#     -------
-#     None.
-
-#     '''
-#     th2,th1 = max(angle1,angle2),min(angle1,angle2)
-#     # print(angle1/pi,angle2/pi)
-#     d = 0 #distance away from MT for zippering
-#     th_crit = 2*pi/9 #critical angle
-#     new_pt = pt
-#     new_angle = angle1
-#     if th2 > 3*pi/2 and th1<pi/2:
-#         a1 = 2*pi-th2 #one angle
-#         a2 = th1
-#         b = a1+a2 #incident angle
-#         if th2 == angle1: #incoming angle is largest
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = pi + th1
-#                 # else: #catastrophe TODO
-#                 #     r = rnd.randint(0, 1)
-#                 #     if r== 0:
-#                 #         new_angle =
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th1
-#         else:
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2-pi
-#                 # else: #catastrophe TODO
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2
-#     elif th2 > pi/2 and th2< pi and th1<pi/2:
-#         a1 = pi-th2 #one angle
-#         a2 = th1
-#         b = a1+a2 #incident angle
-#         if th2 == angle1: #incoming angle is largest
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th1
-#                 # else: #catastrophe TODO
-#                 #     r = rnd.randint(0, 1)
-#                 #     if r== 0:
-#                 #         new_angle =
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th1+pi
-#         else:
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2
-#                 # else: #catastrophe TODO
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2+pi
-#     elif th2 > 3*pi/2 and th1<3*pi/2 and th1 > pi:
-#         a1 = th1- pi#one angle
-#         a2 = 2*pi - th2
-#         b = a1+a2 #incident angle
-#         if th2 == angle1: #incoming angle is largest
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th1
-#                 # else: #catastrophe TODO
-#                 #     r = rnd.randint(0, 1)
-#                 #     if r== 0:
-#                 #         new_angle =
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th1-pi
-#         else:
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2
-#                 # else: #catastrophe TODO
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2-pi
-#     elif th2 > pi and th2<3*pi/2 and th1 < pi and th1 > pi/2:
-#         a1 = th2- pi#one angle
-#         a2 = pi-th1
-#         b = a1+a2 #incident angle
-#         if th2 == angle1: #incoming angle is largest
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th1 + pi
-#                 # else: #catastrophe TODO
-#                 #     r = rnd.randint(0, 1)
-#                 #     if r== 0:
-#                 #         new_angle =
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th1
-#         else:
-#             if b >= pi/2: #incident angle is large
-#                 b2 = pi - b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2 - pi
-#                 # else: #catastrophe TODO
-#             else: #incident angle is good
-#                 b2 = b #redef incident angle
-#                 if b2 <= th_crit: #zippering
-#                     new_pt = [pt[0] - dr*cos(angle1),pt[1] - dr*sin(angle1)] #new point
-#                     new_angle = th2
-#     # else:
-#     #     print('ANGLES GONE WEIRD')
-#     # print('NEW ANGLE', new_angle/pi)
-#     return(new_angle, new_pt)
+    error = None
+    return new_angle, new_pt, resolve, col_pt, error
