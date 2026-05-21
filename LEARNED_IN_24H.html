@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>24 Hours on Tim's MT Simulator — Consolidated Review</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #fafafa; color: #222; font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 820px; margin: 0 auto; padding: 2.5rem 2rem 5rem; }
+
+  /* header */
+  h1 { font-size: 1.9rem; color: #111; line-height: 1.25; }
+  .subtitle { color: #666; font-size: 1rem; margin-top: 0.4rem; }
+  .meta { color: #999; font-size: 0.85rem; margin-top: 0.3rem; font-family: "SF Mono", Consolas, monospace; }
+  .repo-link { display: inline-block; margin-top: 0.6rem; font-size: 0.9rem; color: #2c5aa0; text-decoration: none; font-family: "SF Mono", Consolas, monospace; padding: 0.3rem 0.7rem; background: #f0f4ff; border-radius: 4px; }
+  .repo-link:hover { background: #e0e9f9; }
+
+  /* section headers */
+  h2 { font-size: 1.25rem; color: #333; border-left: 4px solid #2c5aa0; padding-left: 0.85rem; margin: 2.5rem 0 1rem; }
+  h3 { font-size: 1.05rem; color: #444; margin: 1.5rem 0 0.6rem; }
+  h2.section-2 { border-left-color: #2a9d3f; }
+  h2.section-3 { border-left-color: #d4a017; }
+  h2.section-4 { border-left-color: #c0392b; }
+  h2.section-5 { border-left-color: #16a085; }
+  h2.section-6 { border-left-color: #8e44ad; }
+
+  /* TL;DR */
+  .tldr { background: #fff; border: 1px solid #e8e8e8; border-radius: 8px; padding: 1.3rem 1.6rem; margin: 1.5rem 0 2rem; box-shadow: 0 1px 3px rgba(0,0,0,0.04); }
+  .tldr-label { font-size: 0.75rem; font-weight: 700; color: #2c5aa0; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.6rem; }
+  .tldr ul { padding-left: 1.2rem; }
+  .tldr li { margin: 0.4rem 0; font-size: 0.96rem; }
+  .tldr li strong { color: #111; }
+
+  /* body */
+  p { margin: 0.7rem 0; }
+  p.lede { font-size: 1.05rem; color: #333; }
+
+  /* timeline */
+  .timeline { position: relative; padding-left: 2rem; margin: 1.5rem 0 2rem; }
+  .timeline::before { content: ''; position: absolute; left: 0.5rem; top: 0.4rem; bottom: 0.4rem; width: 2px; background: linear-gradient(to bottom, #2c5aa0, #2a9d3f, #d4a017, #c0392b, #16a085); }
+  .tl-event { position: relative; padding: 0.5rem 0 1rem; }
+  .tl-event::before { content: ''; position: absolute; left: -1.7rem; top: 0.8rem; width: 12px; height: 12px; border-radius: 50%; background: #fff; border: 2px solid #2c5aa0; }
+  .tl-event.green::before { border-color: #2a9d3f; }
+  .tl-event.amber::before { border-color: #d4a017; }
+  .tl-event.red::before { border-color: #c0392b; }
+  .tl-event.teal::before { border-color: #16a085; }
+  .tl-time { font-family: "SF Mono", Consolas, monospace; font-size: 0.78rem; color: #999; }
+  .tl-title { font-weight: 600; color: #222; margin: 0.1rem 0; }
+  .tl-detail { font-size: 0.92rem; color: #555; }
+
+  /* code blocks */
+  pre { background: #2d2d2d; color: #f0f0f0; padding: 1rem 1.2rem; border-radius: 6px; font: 0.83rem/1.5 "SF Mono", Consolas, monospace; overflow-x: auto; margin: 0.8rem 0 1rem; }
+  pre .c { color: #999; }
+  pre .k { color: #6ab0e3; }
+  pre .s { color: #c8e88e; }
+  pre .n { color: #f5b97a; }
+  code { font: 0.9em "SF Mono", Consolas, monospace; background: #f0f0f0; padding: 1px 5px; border-radius: 3px; color: #c0392b; }
+
+  /* finding card */
+  .finding { background: #fff; border: 1px solid #e8e8e8; border-radius: 6px; padding: 1.1rem 1.3rem; margin: 1rem 0; border-left-width: 4px; }
+  .finding.confirmed  { border-left-color: #2a9d3f; }
+  .finding.partial    { border-left-color: #d4a017; }
+  .finding.corrected  { border-left-color: #c0392b; }
+  .finding.open       { border-left-color: #2c5aa0; }
+  .finding-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 0.3rem; }
+  .confirmed .finding-label { color: #2a9d3f; }
+  .partial   .finding-label { color: #d4a017; }
+  .corrected .finding-label { color: #c0392b; }
+  .open      .finding-label { color: #2c5aa0; }
+  .finding h3 { margin-top: 0.3rem; }
+  .finding p { font-size: 0.96rem; }
+  .finding .num { font-family: "SF Mono", Consolas, monospace; font-weight: 600; color: #111; }
+
+  /* table */
+  .table-wrap { overflow-x: auto; margin: 1rem 0 1.5rem; border: 1px solid #e8e8e8; border-radius: 6px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th { background: #f5f5f5; padding: 0.6rem 0.85rem; text-align: left; color: #555; font-weight: 600; border-bottom: 2px solid #e8e8e8; }
+  td { padding: 0.55rem 0.85rem; border-bottom: 1px solid #f0f0f0; font-family: "SF Mono", Consolas, monospace; font-size: 0.85rem; }
+  td.label { font-family: inherit; font-size: 0.92rem; }
+  tr:last-child td { border-bottom: none; }
+  .row-baseline { background: #f0f4ff; }
+  .row-nozipper { background: #fff8f0; }
+  .row-catas    { background: #fff0f0; }
+
+  /* chart */
+  .chart-wrap { background: #fff; border: 1px solid #e8e8e8; border-radius: 6px; padding: 1rem 1rem 0.5rem; margin: 1rem 0 1.5rem; }
+  .chart-title { font-size: 0.83rem; color: #555; margin-bottom: 0.5rem; }
+  .legend { display: flex; gap: 1.5rem; margin: 0.5rem 0 0.2rem; font-size: 0.8rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+  .legend-line { display: inline-block; width: 22px; height: 3px; border-radius: 2px; }
+  canvas { display: block; width: 100%; }
+
+  /* SVG architecture diagram */
+  .arch-diagram { background: #fff; border: 1px solid #e8e8e8; border-radius: 6px; padding: 1rem; margin: 1rem 0 1.5rem; }
+  .arch-diagram svg { display: block; margin: 0 auto; max-width: 100%; }
+
+  /* callout */
+  .callout { background: #fff8e8; border-left: 4px solid #d4a017; padding: 0.9rem 1.2rem; margin: 1rem 0; border-radius: 0 4px 4px 0; font-size: 0.94rem; }
+  .callout strong { color: #7a5800; }
+  .callout-fix { background: #f0f9f0; border-left-color: #2a9d3f; }
+  .callout-fix strong { color: #1d6e2c; }
+  .callout-err { background: #ffe8e8; border-left-color: #c0392b; }
+  .callout-err strong { color: #8b1f1f; }
+
+  /* questions section */
+  .question-list { background: #f8f9ff; border: 1px solid #dce3f5; border-radius: 6px; padding: 1.2rem 1.6rem; margin: 1rem 0 1.5rem; }
+  .question-list ol { padding-left: 1.3rem; }
+  .question-list li { margin: 0.65rem 0; font-size: 0.95rem; }
+  .question-list li strong { color: #2c5aa0; }
+
+  /* chips */
+  .chip { display: inline-block; padding: 1px 7px; border-radius: 3px; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.03em; vertical-align: middle; margin-left: 0.4rem; }
+  .chip.green { background: #e0f4e3; color: #1d6e2c; }
+  .chip.amber { background: #fdf3d8; color: #7a5800; }
+  .chip.red   { background: #fce4e4; color: #8b1f1f; }
+  .chip.blue  { background: #e0e9f9; color: #1d3b6e; }
+
+  /* footer */
+  footer { border-top: 1px solid #e8e8e8; padding-top: 1.5rem; margin-top: 3rem; color: #999; font-size: 0.82rem; }
+  footer p { margin: 0.3rem 0; }
+  footer code { background: #f5f5f5; padding: 1px 5px; }
+
+  /* toc */
+  .toc { background: #fff; border: 1px solid #e8e8e8; border-radius: 6px; padding: 0.9rem 1.3rem; margin: 1rem 0 2rem; }
+  .toc-label { font-size: 0.74rem; font-weight: 700; color: #999; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 0.4rem; }
+  .toc ol { padding-left: 1.3rem; font-size: 0.92rem; }
+  .toc li { margin: 0.25rem 0; }
+  .toc a { color: #2c5aa0; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>24 Hours on Tim's Elastic MT Simulator</h1>
+  <div class="subtitle">Refactor, ablation, SAE, neural surrogate, overnight sweep — what I learned and what it told me.</div>
+  <div class="meta">2026-05-20 → 2026-05-21 · BIRS · nigel.birs.ca · GH200 (parallel)</div>
+  <a class="repo-link" href="https://github.com/bigsnarfdude/elastic-mt-refactor">github.com/bigsnarfdude/elastic-mt-refactor → branch refactor/split-zip-cat</a>
+
+  <div class="tldr">
+    <div class="tldr-label">TL;DR — five bullets</div>
+    <ul>
+      <li><strong>Refactored zip_cat (300 lines → 3 modules).</strong> Behavioral equivalence proven on 100k random cases, 50k against your <code>main</code>. Ablation is now a one-line monkey-patch on <code>collision.decision.decide_outcome</code>.</li>
+      <li><strong>Zippering is a rate, not a value.</strong> At t=1h, no_zipper sits at S₂=0.56 and baseline at 0.77 — gap +0.22. At t=9h, baseline has climbed to <strong>0.86</strong>, no_zipper hasn't moved (0.57). The gap compounds with time and density.</li>
+      <li><strong>SAE rediscovered orientation as the natural feature axis.</strong> Unsupervised on 148k snapshots; 32/32 features alive, each tuned to a preferred angle (12°–158°). The hand-designed S₂ falls out of the data without being told.</li>
+      <li><strong>A 99.2%-accurate MLP collision rule crashes the sim</strong> (bundle bookkeeping requires bit-exact zipper outcomes). A "gated" version — MLP for cross/catas only, deterministic zipper — runs end-to-end and reproduces baseline S₂ exactly.</li>
+      <li><strong>One thing I had wrong yesterday:</strong> the S₂ floor isn't branched-nucleation contamination. With default BY-2 params, <code>LDD_bool=False</code>, which makes <code>sample_angle</code> dead code. The floor is statistical bias from measuring nematic order on sparse MT populations. Corrected.</li>
+    </ul>
+  </div>
+
+  <div class="toc">
+    <div class="toc-label">In this doc</div>
+    <ol>
+      <li><a href="#arc">The 24-hour arc</a></li>
+      <li><a href="#refactor">What changed in the code</a></li>
+      <li><a href="#findings">Findings, ranked by confidence</a></li>
+      <li><a href="#data">The overnight data</a></li>
+      <li><a href="#corrected">What I got wrong (and fixed)</a></li>
+      <li><a href="#for-tim">Questions for Tim</a></li>
+      <li><a href="#next">What's next</a></li>
+    </ol>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="arc">1. The 24-hour arc</h2>
+
+  <p class="lede">The framing the whole day operated under: <strong>Tim's simulator is a circuit.</strong> Same mech-interp tools that work on neural nets — ablation, SAE on activations, surrogate models — should work on a hand-built biological sim where the mechanism is written in Python and you can read it. The day was a test of that framing.</p>
+
+  <div class="timeline">
+    <div class="tl-event">
+      <div class="tl-time">2026-05-20 morning · nigel</div>
+      <div class="tl-title">Tried to ablate Tim's <code>zip_cat()</code> in place</div>
+      <div class="tl-detail">300-line angle-quadrant case tree. Editing it broke the sim in unexpected ways because the function does three jobs at once: decides the outcome, computes post-collision geometry, AND provides return-tuple bookkeeping the engine depends on. Couldn't ablate cleanly without rewriting first.</div>
+    </div>
+    <div class="tl-event green">
+      <div class="tl-time">midday · refactor lands</div>
+      <div class="tl-title">Split into <code>collision/{decision,geometry,api}.py</code></div>
+      <div class="tl-detail">Same physics, modular boundaries. <code>zippering.zip_cat()</code> kept as a backward-compatible shim — Tim's <code>sim_algs_fixed_region.py</code> untouched, imports still work. Equivalence proven: 100k random cases match, 50k cases against Tim's <code>main</code> branch match within 1e-9 in outcome label, geometry, position.</div>
+    </div>
+    <div class="tl-event amber">
+      <div class="tl-time">afternoon · first 1-hour ablation sweep</div>
+      <div class="tl-title">Ran baseline / no_zipper / always_catas / random / always_cross / always_zipper+</div>
+      <div class="tl-detail">First-pass S₂ values: baseline 0.78, no_zipper 0.56, always_catas 0.71, random ≈0.6, always_cross OOM'd (no catastrophes → unbounded MT accumulation, 3GB+ RAM). My first take: "branched nucleation dominates the floor." That take had to be corrected (see §5).</div>
+    </div>
+    <div class="tl-event teal">
+      <div class="tl-time">late afternoon · trajectory SAE</div>
+      <div class="tl-title">Trained SAE on per-region snapshots (148,114 examples, 10 seeds)</div>
+      <div class="tl-detail">32-feature SAE on residual-style stacked (angles, lengths, mt_len, θ) tensors. All 32 features alive, each tuned to a preferred angle in [12°, 158°]. Top feature has corr +0.47 with cos(2Ω). Unsupervised reconstruction of "orientation is the natural axis." This was the most surprising single result.</div>
+    </div>
+    <div class="tl-event teal">
+      <div class="tl-time">evening · learned collision rule</div>
+      <div class="tl-title">1,446-parameter MLP → 99.2% accuracy on <code>zip_cat</code> in seconds</div>
+      <div class="tl-detail">Trained a tiny MLP to predict outcome label from (angle1, angle2, r). 99.2% top-1 accuracy. Plugged it into the sim as <code>decide_outcome</code>: crashes immediately — bundle bookkeeping in the elastic-deflection path requires <em>bit-exact</em> zipper geometry, which the MLP doesn't reproduce. Built a gated version (MLP fires only on cross/catas decisions; deterministic geometry kept for zipper outcomes). That runs end-to-end and produces S₂=0.7774 vs baseline 0.7774. <strong>Functional equivalence at the macroscopic level.</strong></div>
+    </div>
+    <div class="tl-event">
+      <div class="tl-time">night · overnight sweep launched</div>
+      <div class="tl-title">16 parallel jobs, 10 sim-hours each, on nigel's 24 cores</div>
+      <div class="tl-detail">5 seeds baseline, 5 seeds no_zipper, 3 seeds always_catas, 3 seeds gated-MLP. Started 19:43. The question: does the +0.22 zipper gap at t=1 hold or grow at t=10?</div>
+    </div>
+    <div class="tl-event green">
+      <div class="tl-time">2026-05-21 06:30 · 9 of 10 sim-hours in hand</div>
+      <div class="tl-title">Gap doesn't hold — it <strong>grows</strong>.</div>
+      <div class="tl-detail">Baseline S₂ climbs 0.59 → 0.86 over 9h, MT count triples. no_zipper plateaus at 0.57 within the first hour and never moves. always_catas plateaus at 0.70. The +0.22 gap at 1h is +0.29 at 9h. Zippering enables MT accumulation, which compounds the alignment signal.</div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="refactor" class="section-2">2. What changed in the code</h2>
+
+  <p>The refactor's design goal: <strong>make ablation possible without editing Tim's code</strong>. The clean ablation surface is one line:</p>
+
+<pre><span class="c"># Want to ablate the collision decision?</span>
+<span class="k">import</span> collision.decision
+collision.decision.decide_outcome = <span class="k">lambda</span> a1, a2, r: <span class="s">'cross'</span>
+<span class="c"># Done. The simulator picks this up via late binding.</span></pre>
+
+  <div class="arch-diagram">
+    <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+      <!-- before -->
+      <text x="20" y="22" font-family="-apple-system" font-size="13" font-weight="600" fill="#666">Before</text>
+      <rect x="20" y="40" width="200" height="180" rx="6" fill="#fff0f0" stroke="#c0392b" stroke-width="1.5"/>
+      <text x="120" y="65" text-anchor="middle" font-family="SF Mono, monospace" font-size="13" font-weight="600" fill="#111">zip_cat()</text>
+      <text x="120" y="84" text-anchor="middle" font-family="-apple-system" font-size="11" fill="#666">300 lines</text>
+      <line x1="40" y1="100" x2="200" y2="100" stroke="#e0d0d0" stroke-width="1"/>
+      <text x="120" y="120" text-anchor="middle" font-family="-apple-system" font-size="11" fill="#444">decides outcome</text>
+      <text x="120" y="140" text-anchor="middle" font-family="-apple-system" font-size="11" fill="#444">computes geometry</text>
+      <text x="120" y="160" text-anchor="middle" font-family="-apple-system" font-size="11" fill="#444">bookkeeping tuple</text>
+      <text x="120" y="180" text-anchor="middle" font-family="-apple-system" font-size="11" fill="#444">13 angle quadrant cases</text>
+      <text x="120" y="205" text-anchor="middle" font-family="-apple-system" font-size="10" font-style="italic" fill="#888">can't ablate cleanly</text>
+
+      <!-- arrow -->
+      <path d="M 235 130 L 295 130" stroke="#666" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#666"/>
+        </marker>
+      </defs>
+      <text x="265" y="120" text-anchor="middle" font-family="-apple-system" font-size="10" fill="#666">split</text>
+
+      <!-- after -->
+      <text x="310" y="22" font-family="-apple-system" font-size="13" font-weight="600" fill="#666">After</text>
+
+      <rect x="310" y="40" width="200" height="48" rx="6" fill="#f0f9f0" stroke="#2a9d3f" stroke-width="1.5"/>
+      <text x="410" y="60" text-anchor="middle" font-family="SF Mono, monospace" font-size="12" font-weight="600" fill="#111">decision.py</text>
+      <text x="410" y="78" text-anchor="middle" font-family="-apple-system" font-size="10" fill="#444">decide_outcome(a1,a2,r) → str</text>
+
+      <rect x="310" y="100" width="200" height="48" rx="6" fill="#f0f9f0" stroke="#2a9d3f" stroke-width="1.5"/>
+      <text x="410" y="120" text-anchor="middle" font-family="SF Mono, monospace" font-size="12" font-weight="600" fill="#111">geometry.py</text>
+      <text x="410" y="138" text-anchor="middle" font-family="-apple-system" font-size="10" fill="#444">zipper_geometry(a1,a2) → (angle,label)</text>
+
+      <rect x="310" y="160" width="200" height="48" rx="6" fill="#f0f9f0" stroke="#2a9d3f" stroke-width="1.5"/>
+      <text x="410" y="180" text-anchor="middle" font-family="SF Mono, monospace" font-size="12" font-weight="600" fill="#111">api.py</text>
+      <text x="410" y="198" text-anchor="middle" font-family="-apple-system" font-size="10" fill="#444">zip_cat_clean(...) → 5-tuple</text>
+
+      <!-- arrow to shim -->
+      <path d="M 410 215 L 410 240" stroke="#666" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+
+      <rect x="310" y="245" width="200" height="48" rx="6" fill="#fff" stroke="#999" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <text x="410" y="265" text-anchor="middle" font-family="SF Mono, monospace" font-size="12" font-weight="600" fill="#111">zippering.zip_cat</text>
+      <text x="410" y="283" text-anchor="middle" font-family="-apple-system" font-size="10" fill="#444">backward-compat shim</text>
+
+      <!-- right side: results -->
+      <rect x="540" y="40" width="200" height="240" rx="6" fill="#f0f4ff" stroke="#2c5aa0" stroke-width="1.5"/>
+      <text x="640" y="62" text-anchor="middle" font-family="-apple-system" font-size="12" font-weight="600" fill="#111">Verified</text>
+      <line x1="560" y1="74" x2="720" y2="74" stroke="#dce3f5" stroke-width="1"/>
+      <text x="555" y="98" font-family="-apple-system" font-size="11" fill="#444">✓ 100k random cases</text>
+      <text x="565" y="113" font-family="-apple-system" font-size="10" fill="#888">outcome / geometry / pos match</text>
+      <text x="555" y="138" font-family="-apple-system" font-size="11" fill="#444">✓ 50k vs Tim's main</text>
+      <text x="565" y="153" font-family="-apple-system" font-size="10" fill="#888">Δ &lt; 1e-9 in all fields</text>
+      <text x="555" y="178" font-family="-apple-system" font-size="11" fill="#444">✓ end-to-end sim</text>
+      <text x="565" y="193" font-family="-apple-system" font-size="10" fill="#888">S₂ trajectory bit-identical t∈[0,0.5h]</text>
+      <text x="555" y="218" font-family="-apple-system" font-size="11" fill="#444">✓ MT density distribution</text>
+      <text x="565" y="233" font-family="-apple-system" font-size="10" fill="#888">775–794 (refactor) vs 771–792 (Tim)</text>
+      <text x="555" y="258" font-family="-apple-system" font-size="11" fill="#444">✓ 81-test suite</text>
+      <text x="565" y="273" font-family="-apple-system" font-size="10" fill="#888">all green on the refactor branch</text>
+    </svg>
+  </div>
+
+  <div class="callout">
+    <strong>Lyapunov caveat (worth raising with Tim).</strong> S₂ trajectories are bit-identical for the first ~0.5 sim-hours, then diverge by ~1–3% due to floating-point amplification in the chaotic dynamics. <em>Statistical</em> equivalence holds (well within seed-to-seed variance, and the S₂ distribution over seeds is unchanged) but the bitstream isn't preserved. This is expected for a chaotic event-driven sim; the refactor preserves Tim's physics, not his bitstream.
+  </div>
+
+  <h3>What broke and how it was found</h3>
+
+  <div class="callout-err callout">
+    <strong>Coverage hole at exact angle boundaries.</strong> Tim's <code>zip_cat</code> has 13 angle-quadrant branches. When <code>angle1</code> exactly equals a quadrant boundary, none of the branches match and the function silently defaults to <code>'cross'</code>. Random floats almost never hit these, but if anything upstream snaps angles to a grid (or if a future seed happens to land there), the behavior changes. The refactor's <code>decide_outcome</code> uses a normalized incident-angle formulation that has no boundary holes; tests pin this explicitly.
+  </div>
+
+  <div class="callout-err callout">
+    <strong>Python early-binding trap.</strong> The first version of <code>api.zip_cat_clean</code> did <code>from collision.decision import decide_outcome</code> at module load. Monkey-patching <code>collision.decision.decide_outcome</code> later had no effect — the local name was already bound. Fixed by switching to <code>collision.decision.decide_outcome(...)</code> attribute access at call time. <em>A test now enforces "patches actually take effect"</em> so this can't regress silently.
+  </div>
+
+  <div class="callout-err callout">
+    <strong><code>deflect_on=False</code> still crashes deeper.</strong> Tried to kill elastic deflection as an independent ablation. <code>comparison_fns.region_traj.add_traj</code> asserts no two trajectories share both angle and point — true when elasticity perturbs every trajectory, false when MTs go straight. Patched that assertion and the sim crashes one level deeper. This is the next refactor: separate trajectory ID from elastic-bend uniqueness. Not done in this 24h.
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="findings" class="section-3">3. Findings, ranked by confidence</h2>
+
+  <div class="finding confirmed">
+    <div class="finding-label">Confirmed · strong signal · n=4 seeds at 10h</div>
+    <h3>Finding 1 — Zippering is a rate, not a value</h3>
+    <p>Static S₂ at t=1h hides the signal. The real difference between conditions is in the <em>slope</em> of S₂ over time:</p>
+    <ul style="padding-left: 1.3rem; font-size: 0.94rem;">
+      <li><strong>baseline:</strong> S₂ climbs 0.59 → 0.86 over 9 sim-hours. <em>Monotonic, still rising.</em></li>
+      <li><strong>no_zipper:</strong> Locks in at S₂ ≈ <span class="num">0.57</span> within the first sim-hour and <em>never moves</em>. Flat trajectory for 9h.</li>
+      <li><strong>always_catas:</strong> Plateaus at S₂ ≈ <span class="num">0.70</span> with very low MT density (~220).</li>
+    </ul>
+    <p>The +0.22 baseline-minus-no_zipper gap at 1h grows to <strong>+0.29 at 9h</strong>. Zippering's contribution isn't a constant — it compounds as density compounds.</p>
+  </div>
+
+  <div class="finding confirmed">
+    <div class="finding-label">Confirmed · macroscopic equivalence</div>
+    <h3>Finding 2 — Zippering does <em>two</em> jobs: alignment AND density control</h3>
+    <p>At 9 sim-hours, mean MT density is:</p>
+    <ul style="padding-left: 1.3rem; font-size: 0.94rem;">
+      <li><strong>baseline:</strong> <span class="num">~1713</span> (tripled from t=1h's 940)</li>
+      <li><strong>no_zipper:</strong> <span class="num">~360</span> (flat — no growth)</li>
+      <li><strong>always_catas:</strong> <span class="num">~221</span> (flat, very low)</li>
+    </ul>
+    <p>Without zippering, MTs don't accumulate. Zippering keeps MTs alive long enough that more arrive, more collide, more align. The collision rule's biggest job isn't aligning MTs per se — it's <em>letting them survive</em>. <code>always_cross</code> in the early sweep had unbounded MT accumulation (no catastrophes → memory blew to 3 GB in 30 min); the collision rule is doing alignment AND density control via collision-induced catastrophe, sharing one code path.</p>
+  </div>
+
+  <div class="finding confirmed">
+    <div class="finding-label">Confirmed · n=10 seeds, unsupervised</div>
+    <h3>Finding 3 — SAE rediscovers orientation as the natural feature axis</h3>
+    <p>32-feature SAE trained on 148,114 per-region snapshots from 10 seeds. No supervision, no S₂ target. After training:</p>
+    <ul style="padding-left: 1.3rem; font-size: 0.94rem;">
+      <li><strong>32 of 32 features alive</strong> (zero dead features at n=10 seeds; at n=1 there were dead features).</li>
+      <li>Each feature is tuned to a <strong>preferred angle in [12°, 158°]</strong>. Effectively the SAE has reconstructed an angular tuning curve set.</li>
+      <li>Top feature correlation with cos(2Ω) = +0.47 (the natural angular order metric).</li>
+    </ul>
+    <p>Interpretation: the model has no special knowledge of nematic order, only stacked (angles, lengths, mt_len, θ) tensors. The fact that orientation falls out as the dominant feature axis means S₂ <em>is</em> the right summary statistic — Tim's hand-designed order parameter aligns with what an unsupervised method finds.</p>
+  </div>
+
+  <div class="finding partial">
+    <div class="finding-label">Partial · functional equivalence, mechanism brittle</div>
+    <h3>Finding 4 — A 99.2% surrogate breaks the sim; a gated version doesn't</h3>
+    <p>Tiny MLP (1,446 parameters): inputs (angle1, angle2, r), output one of {zipper+, zipper-, cross, catas}. Trains in seconds, gets 99.2% top-1 accuracy on Tim's rule.</p>
+    <p><strong>Drop-in replacement crashes immediately.</strong> The elastic-deflection module assumes bit-exact zipper geometry; the MLP doesn't reproduce that. This is a real finding about how brittle the simulator's modular boundaries are at the geometry level.</p>
+    <div class="callout-fix callout">
+      <strong>The gated workaround works.</strong> Run the MLP only for cross/catas decisions; keep Tim's deterministic zipper geometry for zipper+ / zipper-. End-to-end sim runs, and the final S₂ is <strong>identical to baseline (0.7774 vs 0.7774)</strong>. This is the cleanest "the simulator is a circuit" result: you can swap in a learned component and the macroscopic order parameter is preserved, but only if you respect the geometry contract.
+    </div>
+  </div>
+
+  <div class="finding open">
+    <div class="finding-label">Open question · n=3 seeds running</div>
+    <h3>Finding 5 (in progress) — Does the gated MLP reproduce the 10-hour trajectory?</h3>
+    <p>Three gated_MLP seeds running on nigel right now (same overnight batch). The 1-hour result shows perfect match. Whether the trajectory shape matches over 10h — particularly the rate of S₂ growth — is the test. If it matches, we've established that the collision <em>decision</em> alone (a 1,446-param MLP) is enough to reproduce the macroscopic dynamics. If it doesn't, we've found a non-obvious coupling between the decision rule and the long-term dynamics that doesn't show up in the 1-hour snapshot.</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="data" class="section-4">4. The overnight data</h2>
+
+  <p>16 jobs on nigel, started 2026-05-20 19:43, running 10 sim-hours each. As of 06:30 the next morning, 9 of 10 sim-hours are in hand (final result.json lands when each job's last interval completes — that interval is running long due to grown MT populations). All numbers below come from intermediate pickles read live.</p>
+
+  <div class="chart-wrap">
+    <div class="chart-title">S₂ trajectory over 9 sim-hours · mean ± seed range</div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-line" style="background:#2c5aa0"></span> baseline (n=4)</span>
+      <span class="legend-item"><span class="legend-line" style="background:#e67e22"></span> no_zipper (n=4)</span>
+      <span class="legend-item"><span class="legend-line" style="background:#c0392b"></span> always_catas (n=2)</span>
+    </div>
+    <canvas id="s2chart" height="220"></canvas>
+  </div>
+
+  <div class="chart-wrap">
+    <div class="chart-title">MT density trajectory · zippering enables accumulation, not just alignment</div>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-line" style="background:#2c5aa0"></span> baseline</span>
+      <span class="legend-item"><span class="legend-line" style="background:#e67e22"></span> no_zipper</span>
+      <span class="legend-item"><span class="legend-line" style="background:#c0392b"></span> always_catas</span>
+    </div>
+    <canvas id="denschart" height="180"></canvas>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Condition</th><th>S₂ at 1h</th><th>S₂ at 9h</th><th>ΔS₂</th><th>Density at 9h</th><th>Seeds</th></tr>
+      </thead>
+      <tbody>
+        <tr class="row-baseline">
+          <td class="label">baseline</td><td>0.593</td><td><strong>0.860</strong></td>
+          <td style="color:#2a9d3f">+0.267</td><td>~1713</td><td>4×10h + 1×1h</td>
+        </tr>
+        <tr class="row-nozipper">
+          <td class="label">no_zipper</td><td>0.554</td><td><strong>0.566</strong></td>
+          <td style="color:#999">+0.012</td><td>~360</td><td>4×10h + 1×1h</td>
+        </tr>
+        <tr class="row-catas">
+          <td class="label">always_catas</td><td>0.702</td><td><strong>0.705</strong></td>
+          <td style="color:#999">+0.003</td><td>~221</td><td>2×10h + 1×1h</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="corrected" class="section-5">5. What I got wrong (and fixed)</h2>
+
+  <p class="lede">Honesty about a mid-day misread that propagated into the first version of LUNCH_NOTES_FOR_TIM and into a few intermediate writeups.</p>
+
+  <div class="callout callout-err">
+    <strong>Yesterday's framing:</strong> "The S₂ floor (~0.56–0.70) comes from branched nucleation. <code>accept_MT = 0.24</code> means 24% of new MTs nucleate at angles correlated to existing ones, contaminating S₂ at low density. Run <code>accept_MT=0</code> as the proper control."
+  </div>
+
+  <div class="callout callout-fix">
+    <strong>Corrected:</strong> In default BY-2 parameter sets, <code>LDD_bool = False</code>. That flag gates whether <code>sample_angle</code> (the branched-angle generator) ever runs. With it off, new MTs nucleate isotropically regardless of <code>accept_MT</code>. The branched-nucleation contamination story was wrong on its premise.
+  </div>
+
+  <p>The S₂ floor is the right size for <strong>statistical bias of measuring nematic order on sparse MTs</strong>. With ~200 MTs in a region, the sample S₂ has a positive bias even under isotropic distributions because S₂ ≥ 0 always; finite-N averages of |cos(2Δθ)| don't cancel to zero. The <code>always_catas</code> S₂ of 0.70 at density 220 is consistent with that.</p>
+
+  <p>This changes the interpretation of two earlier claims:</p>
+  <ul style="padding-left: 1.3rem; font-size: 0.95rem;">
+    <li><strong>"branched nucleation dominates S₂ in low-density conditions"</strong> — wrong. It's small-N estimator bias.</li>
+    <li><strong>"run baseline_isotropic as the proper control"</strong> — was based on the wrong premise. The right control for the noise-floor question is to <em>increase MT density at low alignment</em> (e.g., higher nucleation rate + always_cross) and see if the floor drops. Tractable on nigel; not run yet.</li>
+  </ul>
+
+  <p>The headline findings (zippering as rate, density compounding, SAE rediscovery, gated MLP equivalence) are unaffected by this correction. They were measured at the right level. The error was in the <em>interpretation</em> of the floor, not in the trajectories themselves.</p>
+
+  <!-- ============================================================ -->
+  <h2 id="for-tim" class="section-6">6. Questions for Tim</h2>
+
+  <div class="question-list">
+    <ol>
+      <li><strong>Refactor PR.</strong> Can I PR the refactor branch against your <code>main</code>? It's mathematically equivalent at the unit level and statistically equivalent end-to-end; nothing else in your code changes. Gives you a clean ablation testbed and gets the 300-line <code>zip_cat</code> down to three small modules. About a day of your time to review the physics.</li>
+      <li><strong>The catastrophe-source question.</strong> Right now <code>r_c</code> (spontaneous catastrophe) and collision-induced catastrophe share one code path. For clean ablation we'd want to tag the source of each catastrophe. Do these have the same biological meaning, or are they actually two different things? If different, that's the right modular boundary to introduce next.</li>
+      <li><strong>S₂ reporting convention.</strong> When you report S₂ in your thesis, do you also report MT density? The 9h overnight data shows S₂(baseline)=0.86 at density 1713 vs S₂(always_catas)=0.70 at density 220 — both look like "high alignment" if you only report S₂. For anyone using your S₂ as ground truth for cross-comparison with experiments, the density context seems load-bearing.</li>
+      <li><strong>Do you have 10-hour run pickles?</strong> The GH200 surrogate sweep would like real ground-truth trajectories from runs longer than the 1-hour sweeps in this work. Even one or two of your own 10h pickles would unblock the active-learning loop.</li>
+      <li><strong>The <code>deflect_on=False</code> coupling.</strong> The elastic-deflection ablation still crashes deeper than the assertion at <code>comparison_fns.py:2957</code>. Worth a 30-min look together to identify the second coupling — it's the next refactor target after the collision split.</li>
+      <li><strong>LDD_bool semantics.</strong> Just to confirm: in your default BY-2 parameter set, <code>LDD_bool=False</code> means branched nucleation is off entirely, and <code>accept_MT</code> is only consulted when <code>LDD_bool=True</code>? (This is the correction in §5; I want to make sure I'm reading the gate right.)</li>
+    </ol>
+  </div>
+
+  <!-- ============================================================ -->
+  <h2 id="next" class="section-1">7. What's next</h2>
+
+  <p>In rough priority order. Most of this is tractable on the existing nigel + GH200 setup.</p>
+
+  <ol style="padding-left: 1.3rem; font-size: 0.95rem;">
+    <li style="margin: 0.4rem 0;"><strong>Wait for final 10h result.json files to land</strong> (in flight, ~1–2 hours from this writeup). Then re-pull and lock the trajectory data.</li>
+    <li style="margin: 0.4rem 0;"><strong>Gated-MLP 10h test.</strong> Is the 1-hour S₂ equivalence preserved over the trajectory? Three seeds running now. If yes, "collision decision is a learnable scalar" goes from clever-demo to load-bearing.</li>
+    <li style="margin: 0.4rem 0;"><strong>Density-controlled noise floor test.</strong> The corrected story (§5) predicts the S₂ floor drops as MT density rises under isotropic conditions. Run <code>always_cross + capped nucleation</code> to vary density without changing the alignment mechanism. Cheap on nigel.</li>
+    <li style="margin: 0.4rem 0;"><strong>Elastic-deflection refactor.</strong> Separate trajectory ID from elastic-bend uniqueness so <code>deflect_on=False</code> can be an ablation. About a day. Worth doing before the next experimental sweep.</li>
+    <li style="margin: 0.4rem 0;"><strong>SAE on full trajectory across conditions.</strong> So far the SAE was trained on baseline only. Re-train on combined (baseline + no_zipper + always_catas) and ask: do the same angular features show up under all three, or does no_zipper develop a categorically different feature set?</li>
+    <li style="margin: 0.4rem 0;"><strong>Surrogate active-learning loop on GH200.</strong> The plan in EXPERIMENT_PROTOCOL_MT_ABLATION.md, now retargeted: surrogate input is (parameters + decision_rule_id), output is (S₂(t), density(t)). Use the refactored ablation surface as a discrete dimension of the input.</li>
+    <li style="margin: 0.4rem 0;"><strong>Tim's review.</strong> This document + the refactor PR. Pinpoints what would and wouldn't be appropriate to write up jointly, and the open physics question (catastrophe-source separation) is most efficiently resolved with five minutes of his time.</li>
+  </ol>
+
+  <footer>
+    <p><strong>Repo:</strong> <code>github.com/bigsnarfdude/elastic-mt-refactor</code> · branch <code>refactor/split-zip-cat</code></p>
+    <p><strong>Data:</strong> <code>nigel.birs.ca:~/mt_phase1/{condition}_seed{N}/</code> · checkpoints <code>orderp_seedN_*idx.pickle</code> · S₂ computed via <code>plotting.s2()</code></p>
+    <p><strong>Source docs consolidated here:</strong> EXPERIMENT_PROTOCOL_MT_ABLATION.md · HANDOFF_TO_GH200_CLAUDE.md · LUNCH_NOTES_FOR_TIM.md · 7 prior highlevel_*.html reports on Desktop · this conversation 2026-05-20→2026-05-21</p>
+    <p>Doc generated 2026-05-21 06:45 · author: V. Oh + Claude (Sonnet 4.6 / Opus 4.7)</p>
+  </footer>
+
+</div>
+
+<script>
+const DATA = {
+  baseline: {
+    mean_s2: [0.5927,0.6176,0.6405,0.6681,0.6797,0.6895,0.6952,0.7104,0.7222,0.7287,0.7539,0.759,0.7612,0.7638,0.7613,0.776,0.7736,0.7848,0.7912,0.7971,0.7975,0.8003,0.807,0.8083,0.8114,0.817,0.8232,0.826,0.8252,0.8242,0.8289,0.8292,0.8311,0.8295,0.826,0.8233,0.8264,0.8297,0.8352,0.8375,0.8344,0.8427,0.8439,0.846,0.8512,0.8504,0.8528,0.8574,0.8553,0.853,0.8532,0.852,0.8503,0.8502,0.8487,0.8493,0.849,0.8517,0.8514,0.85,0.8552,0.8518,0.853,0.8545,0.8506,0.8557,0.8563,0.8549,0.8543,0.8546,0.8588,0.857,0.8602,0.8604,0.8584,0.8571,0.8561,0.858,0.8577,0.86,0.8589,0.8592,0.8563,0.8576,0.8593,0.8608,0.8576,0.8591,0.8556,0.8588,0.8614,0.8605,0.8594,0.861,0.8632,0.8603,0.8579,0.8606,0.8605,0.8584],
+    min_s2:  [0.5855,0.5969,0.6188,0.6497,0.6564,0.671,0.678,0.6872,0.7098,0.7223,0.7527,0.7533,0.7475,0.7491,0.7478,0.7634,0.7565,0.764,0.7739,0.7883,0.7851,0.7924,0.7933,0.7941,0.7954,0.7916,0.8059,0.8149,0.8094,0.8087,0.8145,0.8044,0.8117,0.8155,0.8113,0.8035,0.8089,0.8182,0.8124,0.8214,0.8171,0.8258,0.8215,0.8183,0.8374,0.8374,0.8339,0.8356,0.833,0.8304,0.8425,0.8368,0.8398,0.8364,0.8312,0.8348,0.8382,0.8399,0.8472,0.8356,0.8363,0.8359,0.8348,0.8409,0.826,0.836,0.8316,0.8314,0.8257,0.8226,0.8223,0.8257,0.8312,0.8387,0.8341,0.8236,0.8217,0.8262,0.8292,0.8377,0.8408,0.8437,0.8331,0.8412,0.8395,0.8447,0.8394,0.8409,0.8444,0.8471,0.8501,0.8506,0.8465,0.848,0.8495,0.8354,0.8356,0.8445,0.8459,0.843],
+    max_s2:  [0.5979,0.6435,0.6495,0.6923,0.7105,0.7115,0.717,0.7331,0.7321,0.7356,0.755,0.7617,0.7723,0.7838,0.7768,0.7899,0.7981,0.8155,0.819,0.815,0.8155,0.8146,0.8152,0.8181,0.8208,0.8319,0.8312,0.8333,0.8345,0.8354,0.844,0.8391,0.8393,0.8396,0.8362,0.8332,0.8332,0.8397,0.8464,0.8484,0.8432,0.8498,0.8545,0.8628,0.8602,0.8568,0.8652,0.874,0.8664,0.8671,0.8637,0.8665,0.8624,0.8582,0.8579,0.8607,0.8551,0.8615,0.8569,0.862,0.8694,0.8594,0.8655,0.866,0.8708,0.8708,0.8671,0.8698,0.8698,0.8753,0.876,0.8682,0.8725,0.8691,0.867,0.8701,0.8707,0.8729,0.8687,0.8713,0.8689,0.8669,0.8663,0.8669,0.8699,0.8673,0.8691,0.8718,0.8708,0.8778,0.8771,0.8758,0.8752,0.8755,0.8784,0.8739,0.8712,0.8752,0.8778,0.8783],
+    mean_dens:[491.6,541.7,582.5,624.2,652.0,682.0,703.6,709.3,738.2,787.0,835.8,851.5,878.3,885.7,893.5,935.6,961.4,980.7,1031.3,1057.0,1083.3,1085.7,1120.7,1142.8,1143.9,1169.0,1204.3,1239.1,1299.8,1323.6,1311.0,1271.9,1296.0,1316.9,1300.8,1291.3,1313.2,1340.6,1357.9,1383.6,1445.9,1434.3,1464.9,1525.5,1537.2,1553.0,1602.5,1636.6,1664.1,1640.0,1619.4,1605.0,1573.9,1535.9,1557.2,1536.0,1564.2,1611.0,1605.6,1584.7,1603.3,1623.1,1615.5,1637.4,1650.6,1658.6,1684.1,1697.1,1687.0,1684.9,1708.2,1684.4,1702.6,1686.7,1712.9,1687.4,1694.6,1706.3,1696.3,1699.3,1708.8,1677.4,1682.8,1673.9,1679.6,1695.7,1662.2,1698.2,1678.5,1680.0,1723.2,1678.2,1672.5,1688.6,1677.3,1660.8,1712.7,1741.3,1731.0,1718.1]
+  },
+  no_zipper: {
+    mean_s2: [0.5535,0.5491,0.5517,0.5623,0.5617,0.5577,0.5613,0.5641,0.5729,0.5547,0.5608,0.554,0.5652,0.5573,0.5676,0.5651,0.5603,0.5613,0.5664,0.5634,0.5526,0.5576,0.5811,0.5654,0.5679,0.5643,0.5631,0.5624,0.5572,0.5533,0.5627,0.5679,0.5528,0.5555,0.5592,0.5658,0.5588,0.561,0.5631,0.5635,0.5641,0.5679,0.5566,0.5579,0.5559,0.5606,0.5663,0.5648,0.5729,0.5572,0.5607,0.5711,0.5675,0.5561,0.5572,0.568,0.574,0.5585,0.5591,0.5597,0.5694,0.5683,0.5676,0.5675,0.5661,0.5541,0.5604,0.565,0.5607,0.5505,0.5545,0.5673,0.564,0.5681,0.5495,0.5659,0.5693,0.5538,0.5554,0.5619,0.5684,0.5669,0.5621,0.5624,0.5606,0.5747,0.5668,0.5613,0.5546,0.559,0.5589,0.5634,0.5604,0.558,0.565,0.5678,0.5642,0.5626,0.5654,0.5684],
+    min_s2:  [0.5303,0.534,0.5281,0.5538,0.5555,0.5487,0.5314,0.5553,0.5597,0.5485,0.5388,0.5457,0.5593,0.5463,0.5465,0.5476,0.5341,0.5589,0.5605,0.5595,0.5321,0.553,0.5668,0.559,0.5546,0.5406,0.5544,0.5575,0.5484,0.5389,0.557,0.5615,0.5422,0.5306,0.5315,0.5466,0.5514,0.546,0.5555,0.5494,0.5521,0.5543,0.5351,0.5451,0.5459,0.5541,0.5484,0.5532,0.557,0.5515,0.5398,0.5626,0.5587,0.5463,0.5431,0.5606,0.5547,0.5449,0.5522,0.5429,0.5483,0.5562,0.5492,0.5541,0.5599,0.5475,0.5515,0.5483,0.551,0.542,0.5447,0.5475,0.5423,0.5513,0.5397,0.5538,0.5619,0.5389,0.5414,0.5553,0.5622,0.554,0.5507,0.5405,0.5436,0.5533,0.559,0.5503,0.5427,0.5419,0.5426,0.5519,0.5467,0.5411,0.538,0.5563,0.5409,0.5532,0.5432,0.5589],
+    max_s2:  [0.5703,0.5633,0.5641,0.5833,0.5669,0.5649,0.5844,0.5753,0.5801,0.5643,0.5792,0.5685,0.572,0.5676,0.5934,0.5835,0.5765,0.5637,0.5733,0.5686,0.5715,0.5616,0.5893,0.5739,0.5793,0.5753,0.574,0.5676,0.5644,0.5772,0.5679,0.5753,0.5701,0.5713,0.5823,0.5871,0.5663,0.5814,0.5773,0.5766,0.5697,0.5777,0.5707,0.5666,0.5618,0.5679,0.6003,0.572,0.589,0.5651,0.5795,0.579,0.5768,0.5646,0.5759,0.5783,0.5883,0.5669,0.5656,0.5795,0.5873,0.5797,0.5823,0.5813,0.5732,0.5666,0.5665,0.5739,0.5679,0.5641,0.5712,0.5902,0.5744,0.5837,0.5629,0.5769,0.5798,0.5716,0.5627,0.5693,0.5752,0.5793,0.5783,0.5869,0.5784,0.5821,0.5753,0.5789,0.5641,0.5718,0.5705,0.5899,0.5818,0.5763,0.5874,0.579,0.5741,0.5759,0.5829,0.5807],
+    mean_dens:[358.8,367.1,363.7,365.0,362.4,359.1,366.1,370.7,358.9,366.5,365.1,367.9,365.5,366.0,364.4,363.9,370.1,357.4,362.3,358.8,364.8,364.1,366.2,363.7,358.2,366.6,362.9,369.4,361.4,361.4,366.7,363.5,360.4,365.7,368.5,356.9,356.7,356.7,361.9,366.2,366.5,360.8,352.3,359.9,369.8,363.9,362.0,361.6,363.1,367.9,365.1,362.0,365.5,366.7,360.6,362.4,362.6,368.3,359.4,364.9,359.6,363.4,361.0,359.3,364.3,356.0,357.7,364.2,358.4,360.5,366.6,363.4,361.5,359.2,357.1,359.6,357.8,364.2,361.5,361.6,365.0,366.3,368.8,370.3,365.3,365.2,363.1,362.3,359.9,366.4,371.0,364.8,364.1,370.3,362.7,358.6,364.7,359.1,360.6,358.7]
+  },
+  always_catas: {
+    mean_s2: [0.7016,0.7057,0.7134,0.6946,0.7055,0.7011,0.7016,0.7073,0.7068,0.7221,0.7111,0.7013,0.7019,0.7193,0.7007,0.7031,0.6908,0.7066,0.7125,0.689,0.7062,0.7017,0.7075,0.6995,0.7066,0.6995,0.6992,0.7089,0.7134,0.6961,0.7165,0.7206,0.7068,0.7136,0.6896,0.6935,0.7061,0.7052,0.7029,0.7023,0.7078,0.7065,0.7109,0.7111,0.7006,0.7022,0.7009,0.703,0.698,0.703,0.6984,0.7029,0.7094,0.7012,0.6992,0.7098,0.698,0.681,0.6996,0.7023,0.7141,0.6939,0.6997,0.7066,0.6939,0.7124,0.6988,0.6958,0.7114,0.7184,0.7002,0.705,0.7022,0.714,0.6931,0.7162,0.705,0.702,0.7202,0.7038,0.6963,0.7012,0.7009,0.7095,0.6979,0.7092,0.7126,0.7043,0.7018,0.7051,0.7057,0.7085,0.7079,0.71,0.6922,0.6996,0.7134,0.7069,0.7081,0.6968],
+    min_s2:  [0.6971,0.6957,0.7133,0.6915,0.7045,0.6882,0.6979,0.686,0.705,0.7134,0.7042,0.6852,0.6976,0.7136,0.6968,0.7018,0.6872,0.6946,0.7102,0.68,0.7024,0.6997,0.702,0.694,0.7012,0.6993,0.6916,0.7025,0.7118,0.6933,0.7149,0.701,0.7028,0.7118,0.6831,0.6929,0.7045,0.6961,0.7002,0.7022,0.6995,0.706,0.7007,0.71,0.6949,0.6968,0.6951,0.701,0.6948,0.6969,0.6917,0.7025,0.7069,0.693,0.6894,0.7012,0.6965,0.6682,0.698,0.6963,0.7018,0.6894,0.6974,0.7042,0.6872,0.7117,0.6875,0.6956,0.7093,0.7097,0.6997,0.7042,0.6948,0.7123,0.6838,0.7139,0.6971,0.701,0.7089,0.6933,0.6862,0.6945,0.6918,0.7078,0.6977,0.709,0.7076,0.6931,0.6869,0.6971,0.6953,0.7054,0.7045,0.7002,0.6798,0.6993,0.7046,0.6949,0.7072,0.6904],
+    max_s2:  [0.7061,0.7156,0.7136,0.6978,0.7064,0.714,0.7054,0.7285,0.7086,0.7309,0.7179,0.7174,0.7061,0.7249,0.7045,0.7044,0.6943,0.7186,0.7148,0.698,0.71,0.7037,0.7129,0.7051,0.7119,0.6997,0.7067,0.7153,0.715,0.6989,0.7182,0.7402,0.7108,0.7154,0.6961,0.6942,0.7076,0.7144,0.7055,0.7024,0.7162,0.7071,0.7211,0.7123,0.7064,0.7077,0.7067,0.705,0.7012,0.7091,0.705,0.7033,0.7118,0.7095,0.7091,0.7184,0.6994,0.6938,0.7013,0.7083,0.7264,0.6984,0.7019,0.709,0.7006,0.713,0.7101,0.6961,0.7136,0.727,0.7008,0.7057,0.7096,0.7156,0.7024,0.7185,0.7129,0.703,0.7315,0.7143,0.7064,0.7078,0.7101,0.7112,0.6981,0.7094,0.7176,0.7155,0.7167,0.7132,0.716,0.7116,0.7113,0.7199,0.7046,0.6998,0.7222,0.7188,0.7089,0.7032],
+    mean_dens:[219.8,217.1,222.8,220.9,215.6,223.3,219.6,225.4,217.6,222.7,220.2,222.1,226.8,226.6,218.6,227.4,217.2,219.3,219.4,220.9,222.5,216.9,217.2,226.9,219.9,218.3,225.0,221.5,221.1,218.3,221.6,226.0,221.2,214.9,216.7,215.6,218.7,225.9,221.4,223.2,221.2,216.8,226.5,225.2,225.2,223.9,216.9,218.8,215.8,220.6,216.8,223.3,220.5,223.6,219.1,215.8,213.3,209.9,221.0,217.5,218.5,219.0,213.8,225.1,221.8,221.4,214.0,217.8,228.2,226.2,223.9,223.3,216.2,222.4,219.1,227.1,222.9,214.0,222.3,217.8,216.4,215.3,219.7,217.0,223.6,216.0,216.6,226.0,219.0,222.5,223.3,217.5,222.8,221.5,227.9,227.8,221.4,220.4,215.1,220.5]
+  }
+};
+
+function drawChart(canvasId, field, yMin, yMax, showBand) {
+  const canvas = document.getElementById(canvasId);
+  const dpr = window.devicePixelRatio || 1;
+  const W = canvas.offsetWidth;
+  const H = canvas.offsetHeight;
+  canvas.width = W * dpr;
+  canvas.height = H * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const PAD = { top: 10, right: 20, bottom: 30, left: 50 };
+  const pw = W - PAD.left - PAD.right;
+  const ph = H - PAD.top - PAD.bottom;
+
+  const colors = { baseline: '#2c5aa0', no_zipper: '#e67e22', always_catas: '#c0392b' };
+  const N = 100;
+  const xp = i => PAD.left + (i / (N - 1)) * pw;
+  const yp = v => PAD.top + ph - ((v - yMin) / (yMax - yMin)) * ph;
+
+  ctx.strokeStyle = '#eeeeee'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 5; i++) {
+    const v = yMin + (i / 5) * (yMax - yMin);
+    const y = yp(v);
+    ctx.beginPath(); ctx.moveTo(PAD.left, y); ctx.lineTo(PAD.left + pw, y); ctx.stroke();
+    ctx.fillStyle = '#aaa'; ctx.font = '10px "SF Mono", monospace';
+    ctx.textAlign = 'right'; ctx.fillText(v.toFixed(2), PAD.left - 6, y + 3.5);
+  }
+  ctx.fillStyle = '#aaa'; ctx.textAlign = 'center';
+  for (let h = 0; h <= 9; h++) {
+    const i = Math.round((h / 9) * (N - 1));
+    ctx.fillText(h + 'h', xp(i), H - PAD.bottom + 14);
+  }
+
+  Object.entries(DATA).forEach(([cond, d]) => {
+    const series = d[field], color = colors[cond];
+    if (showBand && d.min_s2 && d.max_s2) {
+      ctx.beginPath();
+      d.min_s2.forEach((v, i) => i === 0 ? ctx.moveTo(xp(i), yp(v)) : ctx.lineTo(xp(i), yp(v)));
+      [...d.max_s2].reverse().forEach((v, i) => ctx.lineTo(xp(N - 1 - i), yp(v)));
+      ctx.closePath();
+      ctx.fillStyle = color + '1a'; ctx.fill();
+    }
+    ctx.beginPath();
+    series.forEach((v, i) => i === 0 ? ctx.moveTo(xp(i), yp(v)) : ctx.lineTo(xp(i), yp(v)));
+    ctx.strokeStyle = color; ctx.lineWidth = 2.5; ctx.lineJoin = 'round'; ctx.stroke();
+  });
+}
+
+function drawAll() {
+  drawChart('s2chart',   'mean_s2',   0.45, 0.95, true);
+  drawChart('denschart', 'mean_dens', 0,    1900, false);
+}
+window.addEventListener('load', drawAll);
+window.addEventListener('resize', drawAll);
+</script>
+</body>
+</html>

@@ -4,3 +4,8 @@ __pycache__/
 ellipse_table.pickle
 .pytest_cache/
 *.egg-info/
+
+# 24h sprint additions
+sprint_2026-05-21/__pycache__/
+sprint_2026-05-21/step3_runs/
+sprint_2026-05-21/step3_tree_runs/

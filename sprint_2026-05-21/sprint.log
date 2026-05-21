@@ -1,0 +1,95 @@
+================================================================
+MT MLP SPRINT — Thu 21 May 2026 07:39:41 MDT
+Repo: /Users/vincent/Desktop/microtubles/elastic-mt-refactor
+================================================================
+
+▶ STEP 1 — Retraining MLP (target: 100% on label)
+============================================================
+STEP 1 — Retrain MLP to label-100%
+============================================================
+
+[1/3] Generating training set (1M samples)...
+  generating 500000 uniform + 500000 boundary samples...
+  dataset built in 9.8s
+  class counts: zipper+=235711 zipper-=236421 cross=264199 catas=263669
+
+[2/3] Generating held-out test set (100k uniform + 100k boundary)...
+  generating 100000 uniform + 100000 boundary samples...
+  dataset built in 2.0s
+  class counts: zipper+=47138 zipper-=46971 cross=52980 catas=52911
+
+[3/3] Training MLP (hidden=64)...
+  epoch  1/30  CE=0.3835  ang_MSE=0.0688  test_acc=97.367%
+  epoch  2/30  CE=0.0994  ang_MSE=0.0325  test_acc=97.855%
+  epoch  3/30  CE=0.0611  ang_MSE=0.0264  test_acc=99.061%
+  epoch  4/30  CE=0.0468  ang_MSE=0.0229  test_acc=98.573%
+  epoch  5/30  CE=0.0397  ang_MSE=0.0207  test_acc=98.554%
+  epoch  6/30  CE=0.0346  ang_MSE=0.0188  test_acc=99.228%
+  epoch  7/30  CE=0.0312  ang_MSE=0.0174  test_acc=99.081%
+  epoch  8/30  CE=0.0288  ang_MSE=0.0165  test_acc=99.101%
+  epoch  9/30  CE=0.0271  ang_MSE=0.0156  test_acc=99.011%
+  epoch 10/30  CE=0.0251  ang_MSE=0.0149  test_acc=98.979%
+  epoch 11/30  CE=0.0236  ang_MSE=0.0142  test_acc=99.266%
+  epoch 12/30  CE=0.0232  ang_MSE=0.0139  test_acc=99.248%
+  epoch 13/30  CE=0.0225  ang_MSE=0.0136  test_acc=98.883%
+  epoch 14/30  CE=0.0207  ang_MSE=0.0132  test_acc=99.305%
+  epoch 15/30  CE=0.0203  ang_MSE=0.0127  test_acc=99.358%
+  epoch 16/30  CE=0.0194  ang_MSE=0.0125  test_acc=99.162%
+  epoch 17/30  CE=0.0193  ang_MSE=0.0124  test_acc=99.275%
+  epoch 18/30  CE=0.0183  ang_MSE=0.0120  test_acc=99.215%
+  epoch 19/30  CE=0.0181  ang_MSE=0.0118  test_acc=99.260%
+  epoch 20/30  CE=0.0175  ang_MSE=0.0118  test_acc=98.984%
+  epoch 21/30  CE=0.0170  ang_MSE=0.0112  test_acc=99.469%
+  epoch 22/30  CE=0.0167  ang_MSE=0.0112  test_acc=98.949%
+  epoch 23/30  CE=0.0163  ang_MSE=0.0111  test_acc=99.220%
+  epoch 24/30  CE=0.0168  ang_MSE=0.0109  test_acc=99.161%
+  epoch 25/30  CE=0.0162  ang_MSE=0.0108  test_acc=99.159%
+  epoch 26/30  CE=0.0149  ang_MSE=0.0106  test_acc=99.121%
+  epoch 27/30  CE=0.0158  ang_MSE=0.0105  test_acc=99.476%
+  epoch 28/30  CE=0.0150  ang_MSE=0.0105  test_acc=99.341%
+  epoch 29/30  CE=0.0148  ang_MSE=0.0103  test_acc=99.371%
+  epoch 30/30  CE=0.0150  ang_MSE=0.0103  test_acc=99.197%
+
+[final] Computing detailed metrics...
+
+  RESULT: test accuracy = 99.1970%  (boundary-only = 98.6500%)
+  model saved to models/learned_zipcat_v2.npz  (4934 params)
+  metrics saved to sprint_2026-05-21/step1_metrics.json
+  train time: 50.2s
+  step 1 wall: 62s
+
+▶ STEP 2 — Probing hidden layer (h2 → incident_angle, SAE)
+============================================================
+STEP 2 — Probe MLP hidden layer
+============================================================
+
+[1/4] Loading trained MLP...
+  hidden size = 64, params = 4934
+
+[2/4] Generating 200k probe examples (uniform random)...
+  generating 200000 uniform + 0 boundary samples...
+  dataset built in 1.9s
+  class counts: zipper+=44446 zipper-=44419 cross=55409 catas=55726
+
+[3/4] Computing h2 activations + linear probes...
+  H2 shape: (200000, 64), mean nonzero per row: 38.6
+  linear probe  h2 -> incident_angle    R² = 0.9334
+  linear probe  h2 -> is_zip_regime     R² = 0.8595
+  per-unit |corr(h2_i, incident_angle)| top-3: [0.546999990940094, 0.5419999957084656, 0.5220000147819519]
+
+[4/4] Training 16-feature SAE on h2...
+  SAE epoch 10/50  recon=11.0942  L1=1.1021
+  SAE epoch 20/50  recon=8.9482  L1=0.9198
+  SAE epoch 30/50  recon=7.6486  L1=0.9427
+  SAE epoch 40/50  recon=6.7849  L1=0.9898
+  SAE epoch 50/50  recon=6.2301  L1=1.0082
+  ✓ wrote /Users/vincent/Desktop/microtubles/elastic-mt-refactor/sprint_2026-05-21/step2_sae_features.png
+  ✓ wrote /Users/vincent/Desktop/microtubles/elastic-mt-refactor/sprint_2026-05-21/step2_feat_by_outcome.png
+
+  RESULT:
+    h2 -> incident_angle    R² = 0.9334
+    h2 -> is_zip_regime     R² = 0.8595
+    metrics → sprint_2026-05-21/step2_metrics.json
+  step 2 wall: 14s
+
+▶ STEP 3 — Verifying in simulator (baseline / gated_v2 / full_mlp_v2)
