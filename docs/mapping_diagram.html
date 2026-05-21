@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>From the cell to the SAE: every mapping in one diagram</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #fafafa; color: #222;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    font-size: 15px; line-height: 1.6;
+  }
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem 1.5rem 4rem; }
+
+  header { border-left: 4px solid #2c5aa0; padding-left: 1.25rem; margin-bottom: 1.5rem; }
+  header h1 { font-size: 1.55rem; font-weight: 700; color: #111; line-height: 1.25; margin-bottom: 0.3rem; }
+  header .sub { color: #555; font-size: 0.96rem; }
+  header .meta { font-size: 0.78rem; color: #999; font-family: "SF Mono","Fira Code","Consolas",monospace; margin-top: 0.35rem; }
+
+  section { margin-bottom: 2.25rem; }
+  h2 {
+    font-size: 1.05rem; font-weight: 700; color: #444;
+    border-left: 3px solid #2c5aa0; padding-left: 0.7rem;
+    text-transform: uppercase; letter-spacing: 0.05em;
+    margin-bottom: 0.85rem;
+  }
+  h3 { font-size: 1rem; font-weight: 700; color: #222; margin: 1rem 0 0.4rem; }
+  p { color: #333; margin-bottom: 0.7rem; }
+  code {
+    font-family: "SF Mono","Fira Code","Consolas",monospace;
+    font-size: 0.86em; background: #e8f4ff; color: #1a5fa8;
+    padding: 0.08em 0.32em; border-radius: 3px;
+  }
+  strong { color: #111; }
+
+  .diagram-wrap {
+    background: #fff; border: 1px solid #dde; border-radius: 8px;
+    padding: 1.25rem 0.8rem; margin: 1rem 0; overflow-x: auto;
+  }
+  svg text {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  .caption {
+    font-size: 0.84rem; color: #666; font-style: italic;
+    margin-top: 0.6rem; line-height: 1.45;
+    padding: 0 1rem;
+  }
+
+  table {
+    width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 0.5rem 0 1rem;
+  }
+  th { background: #eef6ff; color: #2c5aa0; font-weight: 700; padding: 0.45rem 0.7rem; text-align: left; border-bottom: 2px solid #cde4f8; }
+  td { padding: 0.5rem 0.7rem; border-bottom: 1px solid #eee; color: #333; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+
+  footer { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid #dde; font-size: 0.78rem; color: #999; font-family: "SF Mono","Fira Code","Consolas",monospace; }
+  footer a { color: #2c5aa0; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>From the Cell to the SAE: Every Mapping in One Diagram</h1>
+    <div class="sub">How Tim's plant cell becomes a 2D rectangle, becomes a grid of regions, becomes histograms, becomes SAE features, becomes a single scalar.</div>
+    <div class="meta">2026-05-20 · companion to docs/findings.html</div>
+  </header>
+
+  <!-- ─────────────── BIG OVERVIEW SVG ─────────────── -->
+  <section>
+    <h2>The full cascade</h2>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 1050 540" width="100%" xmlns="http://www.w3.org/2000/svg">
+
+        <defs>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#2c5aa0"/>
+          </marker>
+          <marker id="arrow-gray" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#888"/>
+          </marker>
+          <pattern id="mtsAligned" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(15)">
+            <line x1="0" y1="7" x2="14" y2="7" stroke="#2a9d3f" stroke-width="0.9" opacity="0.8"/>
+          </pattern>
+          <pattern id="mtsScattered" patternUnits="userSpaceOnUse" width="20" height="20">
+            <line x1="2" y1="5" x2="14" y2="3" stroke="#2a9d3f" stroke-width="0.8" opacity="0.7"/>
+            <line x1="4" y1="14" x2="18" y2="18" stroke="#2a9d3f" stroke-width="0.8" opacity="0.7"/>
+            <line x1="11" y1="8" x2="6" y2="17" stroke="#2a9d3f" stroke-width="0.8" opacity="0.7"/>
+          </pattern>
+        </defs>
+
+        <!-- ─────────────── PANEL 1: CYLINDER (3D-ish) ─────────────── -->
+        <g transform="translate(15, 80)">
+          <text x="100" y="-30" font-size="13" font-weight="700" fill="#444" text-anchor="middle">1 · Plant cell (3D)</text>
+          <text x="100" y="-12" font-size="10" fill="#666" text-anchor="middle">cylinder, R=20μm, height=L_y</text>
+
+          <!-- cylinder body -->
+          <ellipse cx="100" cy="40" rx="55" ry="14" fill="#fffbf0" stroke="#888" stroke-width="1.2"/>
+          <line x1="45" y1="40" x2="45" y2="265" stroke="#888" stroke-width="1.2"/>
+          <line x1="155" y1="40" x2="155" y2="265" stroke="#888" stroke-width="1.2"/>
+          <ellipse cx="100" cy="265" rx="55" ry="14" fill="#fffbf0" stroke="#888" stroke-width="1.2"/>
+          <!-- back of bottom ellipse -->
+          <path d="M 45,265 Q 100,279 155,265" fill="none" stroke="#bbb" stroke-width="1.2" stroke-dasharray="3,3"/>
+
+          <!-- MTs as helical-ish lines on the surface -->
+          <g>
+            <path d="M 55,60 Q 80,90 100,140 T 145,250" fill="none" stroke="#2a9d3f" stroke-width="1.5"/>
+            <path d="M 70,50 Q 95,80 115,135 T 150,220" fill="none" stroke="#2a9d3f" stroke-width="1.5"/>
+            <path d="M 90,55 Q 110,90 130,150 T 145,240" fill="none" stroke="#2a9d3f" stroke-width="1.5"/>
+            <path d="M 50,90 Q 75,135 95,200 T 115,260" fill="none" stroke="#2a9d3f" stroke-width="1.5"/>
+            <path d="M 60,150 Q 90,180 120,220" fill="none" stroke="#2a9d3f" stroke-width="1.5"/>
+            <path d="M 80,180 Q 100,205 125,255" fill="none" stroke="#2a9d3f" stroke-width="1.5"/>
+          </g>
+
+          <!-- labels -->
+          <text x="172" y="50" font-size="9.5" fill="#555">φ (azimuthal)</text>
+          <text x="172" y="62" font-size="9.5" fill="#555">∈ [0, 2π)</text>
+          <text x="172" y="155" font-size="9.5" fill="#555">z (axial)</text>
+          <text x="172" y="167" font-size="9.5" fill="#555">∈ [0, L_y]</text>
+
+          <!-- coords axis -->
+          <line x1="100" y1="275" x2="100" y2="305" stroke="#888" stroke-width="1.5" marker-end="url(#arrow-gray)"/>
+          <text x="107" y="298" font-size="9" fill="#888" font-style="italic">z</text>
+        </g>
+
+        <!-- arrow 1→2 -->
+        <g transform="translate(220, 220)">
+          <line x1="0" y1="0" x2="50" y2="0" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="25" y="-8" font-size="10" fill="#2c5aa0" text-anchor="middle" font-weight="600">unroll</text>
+          <text x="25" y="14" font-size="9" fill="#666" text-anchor="middle" font-style="italic">(x = R·φ)</text>
+        </g>
+
+        <!-- ─────────────── PANEL 2: 2D PLANE (UNROLLED) ─────────────── -->
+        <g transform="translate(280, 80)">
+          <text x="120" y="-30" font-size="13" font-weight="700" fill="#444" text-anchor="middle">2 · Unrolled rectangle</text>
+          <text x="120" y="-12" font-size="10" fill="#666" text-anchor="middle">2D plane, periodic in x</text>
+
+          <!-- the rectangle -->
+          <rect x="0" y="0" width="240" height="240" fill="#fffbf0" stroke="#888" stroke-width="1.2"/>
+
+          <!-- MTs (same MTs, now straight-ish on the plane) -->
+          <g stroke="#2a9d3f" stroke-width="1.6" fill="none">
+            <line x1="10" y1="60" x2="220" y2="65"/>
+            <line x1="5" y1="30" x2="230" y2="40"/>
+            <line x1="30" y1="120" x2="210" y2="135"/>
+            <line x1="50" y1="180" x2="220" y2="170"/>
+            <line x1="15" y1="220" x2="225" y2="215"/>
+            <line x1="40" y1="90" x2="180" y2="100"/>
+            <!-- periodic wraparound shown -->
+            <line x1="0" y1="155" x2="100" y2="148"/>
+            <line x1="160" y1="148" x2="240" y2="155"/>
+            <line x1="0" y1="200" x2="80" y2="195"/>
+            <line x1="180" y1="195" x2="240" y2="200"/>
+          </g>
+
+          <!-- periodic boundary indicators -->
+          <line x1="0" y1="-3" x2="0" y2="243" stroke="#c0392b" stroke-width="2" stroke-dasharray="4,3"/>
+          <line x1="240" y1="-3" x2="240" y2="243" stroke="#c0392b" stroke-width="2" stroke-dasharray="4,3"/>
+          <text x="-9" y="248" font-size="9" fill="#c0392b" text-anchor="end">x=0</text>
+          <text x="245" y="248" font-size="9" fill="#c0392b">x=2π</text>
+          <text x="120" y="263" font-size="9" fill="#c0392b" text-anchor="middle" font-style="italic">(periodic — these edges are glued)</text>
+
+          <!-- axes -->
+          <text x="120" y="-1" font-size="9" fill="#666" text-anchor="middle">x ∈ [0, 2π)</text>
+          <text x="-9" y="120" font-size="9" fill="#666" text-anchor="end" transform="rotate(-90, -9, 120)">y ∈ [0, L_y/R]</text>
+        </g>
+
+        <!-- arrow 2→3 -->
+        <g transform="translate(540, 220)">
+          <line x1="0" y1="0" x2="40" y2="0" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="20" y="-8" font-size="10" fill="#2c5aa0" text-anchor="middle" font-weight="600">grid</text>
+          <text x="20" y="14" font-size="9" fill="#666" text-anchor="middle" font-style="italic">26×26 regions</text>
+        </g>
+
+        <!-- ─────────────── PANEL 3: GRID OF REGIONS ─────────────── -->
+        <g transform="translate(590, 80)">
+          <text x="120" y="-30" font-size="13" font-weight="700" fill="#444" text-anchor="middle">3 · Grid of regions</text>
+          <text x="120" y="-12" font-size="10" fill="#666" text-anchor="middle">~676 cells, each 1×1 sim units</text>
+
+          <rect x="0" y="0" width="240" height="240" fill="#fff" stroke="#888" stroke-width="1.2"/>
+
+          <!-- grid lines (10x10 simplified, code uses 26x26) -->
+          <g stroke="#ccc" stroke-width="0.5">
+            <line x1="24" y1="0" x2="24" y2="240"/>
+            <line x1="48" y1="0" x2="48" y2="240"/>
+            <line x1="72" y1="0" x2="72" y2="240"/>
+            <line x1="96" y1="0" x2="96" y2="240"/>
+            <line x1="120" y1="0" x2="120" y2="240"/>
+            <line x1="144" y1="0" x2="144" y2="240"/>
+            <line x1="168" y1="0" x2="168" y2="240"/>
+            <line x1="192" y1="0" x2="192" y2="240"/>
+            <line x1="216" y1="0" x2="216" y2="240"/>
+            <line x1="0" y1="24" x2="240" y2="24"/>
+            <line x1="0" y1="48" x2="240" y2="48"/>
+            <line x1="0" y1="72" x2="240" y2="72"/>
+            <line x1="0" y1="96" x2="240" y2="96"/>
+            <line x1="0" y1="120" x2="240" y2="120"/>
+            <line x1="0" y1="144" x2="240" y2="144"/>
+            <line x1="0" y1="168" x2="240" y2="168"/>
+            <line x1="0" y1="192" x2="240" y2="192"/>
+            <line x1="0" y1="216" x2="240" y2="216"/>
+          </g>
+
+          <!-- MTs as before but lighter -->
+          <g stroke="#2a9d3f" stroke-width="1.3" fill="none" opacity="0.75">
+            <line x1="10" y1="60" x2="220" y2="65"/>
+            <line x1="30" y1="120" x2="210" y2="135"/>
+            <line x1="50" y1="180" x2="220" y2="170"/>
+            <line x1="15" y1="220" x2="225" y2="215"/>
+            <line x1="40" y1="90" x2="180" y2="100"/>
+          </g>
+
+          <!-- highlight one region -->
+          <rect x="72" y="96" width="24" height="24" fill="#2c5aa0" fill-opacity="0.2" stroke="#2c5aa0" stroke-width="2"/>
+          <text x="84" y="110" font-size="9" fill="#1a5fa8" text-anchor="middle" font-weight="700">this region</text>
+          <text x="84" y="120" font-size="8" fill="#1a5fa8" text-anchor="middle" font-style="italic">→ histogram</text>
+
+          <!-- arrow to histogram -->
+          <line x1="96" y1="108" x2="180" y2="280" stroke="#2c5aa0" stroke-width="1.5" stroke-dasharray="4,3"/>
+        </g>
+
+        <!-- arrow 3→4 -->
+        <g transform="translate(850, 220)">
+          <line x1="0" y1="0" x2="35" y2="0" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="17" y="-8" font-size="10" fill="#2c5aa0" text-anchor="middle" font-weight="600">order_hist</text>
+        </g>
+
+        <!-- ─────────────── PANEL 4: PER-REGION HISTOGRAM ─────────────── -->
+        <g transform="translate(890, 80)">
+          <text x="75" y="-30" font-size="13" font-weight="700" fill="#444" text-anchor="middle">4 · Per-region histogram</text>
+          <text x="75" y="-12" font-size="10" fill="#666" text-anchor="middle">length-weighted, 36 angle bins</text>
+
+          <!-- axes -->
+          <line x1="0" y1="180" x2="150" y2="180" stroke="#444" stroke-width="1"/>
+          <line x1="0" y1="0" x2="0" y2="180" stroke="#444" stroke-width="1"/>
+
+          <!-- histogram bars (36 simplified to ~12 visible bars) -->
+          <g fill="#2c5aa0">
+            <rect x="3" y="155" width="11" height="25"/>
+            <rect x="16" y="140" width="11" height="40"/>
+            <rect x="29" y="120" width="11" height="60"/>
+            <rect x="42" y="110" width="11" height="70"/>
+            <rect x="55" y="115" width="11" height="65"/>
+            <rect x="68" y="135" width="11" height="45"/>
+            <rect x="81" y="155" width="11" height="25"/>
+            <rect x="94" y="165" width="11" height="15"/>
+            <rect x="107" y="170" width="11" height="10"/>
+            <rect x="120" y="172" width="11" height="8"/>
+            <rect x="133" y="170" width="11" height="10"/>
+          </g>
+
+          <!-- axis labels -->
+          <text x="0" y="195" font-size="8" fill="#666">0°</text>
+          <text x="65" y="195" font-size="8" fill="#666">90°</text>
+          <text x="135" y="195" font-size="8" fill="#666">180°</text>
+          <text x="75" y="210" font-size="9" fill="#666" text-anchor="middle" font-style="italic">MT angle (nematic)</text>
+          <text x="-7" y="90" font-size="9" fill="#666" text-anchor="end" transform="rotate(-90, -7, 90)">total MT length</text>
+
+          <!-- the dimension -->
+          <text x="75" y="-3" font-size="9" fill="#2c5aa0" text-anchor="middle" font-style="italic">→ 36-dim vector</text>
+        </g>
+
+        <!-- ─────────────── PANEL 5: SAE (below) ─────────────── -->
+        <g transform="translate(595, 380)">
+          <text x="130" y="-12" font-size="13" font-weight="700" fill="#444" text-anchor="middle">5 · SAE features</text>
+
+          <!-- input vector representation -->
+          <g transform="translate(0, 0)">
+            <text x="-3" y="50" font-size="9" fill="#666" text-anchor="end">36 bins</text>
+            <rect x="0" y="0" width="14" height="100" fill="#2c5aa0" opacity="0.6"/>
+          </g>
+
+          <!-- arrow into SAE -->
+          <line x1="18" y1="50" x2="48" y2="50" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="33" y="44" font-size="9" fill="#2c5aa0" text-anchor="middle" font-style="italic">W_e</text>
+
+          <!-- SAE hidden layer -->
+          <g transform="translate(50, 0)">
+            <text x="13" y="-3" font-size="9" fill="#666" text-anchor="middle">32 features</text>
+            <g>
+              <rect x="0" y="0" width="6" height="100" fill="#d4a017" opacity="0.8"/>
+              <rect x="7" y="20" width="6" height="80" fill="#d4a017" opacity="0.5"/>
+              <rect x="14" y="0" width="6" height="100" fill="#d4a017" opacity="0.9"/>
+              <rect x="21" y="40" width="6" height="60" fill="#d4a017" opacity="0.3"/>
+              <rect x="28" y="60" width="6" height="40" fill="#d4a017" opacity="0.2"/>
+              <rect x="35" y="10" width="6" height="90" fill="#d4a017" opacity="0.7"/>
+              <rect x="42" y="50" width="6" height="50" fill="#d4a017" opacity="0.4"/>
+            </g>
+          </g>
+
+          <!-- annotation: orientation-selective -->
+          <text x="120" y="115" font-size="9" fill="#666" text-anchor="middle" font-style="italic">each feature is</text>
+          <text x="120" y="127" font-size="9" fill="#666" text-anchor="middle" font-style="italic">orientation-selective</text>
+
+          <!-- arrow out: also produces S2 etc -->
+          <line x1="100" y1="50" x2="135" y2="50" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrow)"/>
+
+          <!-- reconstruction and probe -->
+          <g transform="translate(135, 0)">
+            <rect x="0" y="0" width="14" height="100" fill="#2a9d3f" opacity="0.4"/>
+            <text x="7" y="-3" font-size="9" fill="#666" text-anchor="middle">x̂</text>
+            <text x="7" y="115" font-size="9" fill="#666" text-anchor="middle" font-style="italic">recon</text>
+          </g>
+
+          <!-- the probe pipeline -->
+          <g transform="translate(170, 30)">
+            <text x="0" y="0" font-size="10" fill="#2c5aa0" font-weight="700">→ probe</text>
+            <line x1="0" y1="10" x2="0" y2="20" stroke="#888" stroke-width="0.8"/>
+            <text x="-5" y="32" font-size="9" fill="#666">corr(feature, cos 2Ω)</text>
+            <text x="-5" y="44" font-size="9" fill="#666">= +0.47 (n=10)</text>
+            <text x="-5" y="60" font-size="9" fill="#666">corr(feature, S₂)</text>
+            <text x="-5" y="72" font-size="9" fill="#666">= +0.05 (n=10)</text>
+          </g>
+        </g>
+
+        <!-- ─────────────── PANEL 6: SCALARS ─────────────── -->
+        <g transform="translate(20, 380)">
+          <text x="225" y="-12" font-size="13" font-weight="700" fill="#444" text-anchor="middle">6 · Global readouts (the published numbers)</text>
+
+          <!-- big arrow showing all-region pooling -->
+          <line x1="0" y1="30" x2="40" y2="30" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrow)"/>
+          <text x="20" y="22" font-size="9" fill="#2c5aa0" text-anchor="middle">order_param()</text>
+          <text x="20" y="48" font-size="9" fill="#666" text-anchor="middle" font-style="italic">pool 676 regions</text>
+
+          <!-- S2 box -->
+          <rect x="50" y="5" width="80" height="60" fill="#f3fbf5" stroke="#2a9d3f" stroke-width="1.5"/>
+          <text x="90" y="25" font-size="14" fill="#1a7a30" text-anchor="middle" font-weight="700">S₂</text>
+          <text x="90" y="40" font-size="9" fill="#1a7a30" text-anchor="middle">scalar in [0,1]</text>
+          <text x="90" y="52" font-size="9" fill="#1a7a30" text-anchor="middle">nematic order</text>
+          <text x="90" y="62" font-size="9" fill="#1a7a30" text-anchor="middle">0.74 baseline</text>
+
+          <!-- arrow to Omega -->
+          <line x1="135" y1="35" x2="155" y2="35" stroke="#888" stroke-width="1"/>
+
+          <!-- Omega box -->
+          <rect x="155" y="5" width="80" height="60" fill="#fff5f5" stroke="#c0392b" stroke-width="1.5"/>
+          <text x="195" y="25" font-size="14" fill="#a93226" text-anchor="middle" font-weight="700">Ω</text>
+          <text x="195" y="40" font-size="9" fill="#a93226" text-anchor="middle">scalar in [0, π)</text>
+          <text x="195" y="52" font-size="9" fill="#a93226" text-anchor="middle">dominant angle</text>
+          <text x="195" y="62" font-size="9" fill="#a93226" text-anchor="middle">≈ SAE features</text>
+
+          <!-- arrow to density -->
+          <line x1="240" y1="35" x2="260" y2="35" stroke="#888" stroke-width="1"/>
+
+          <!-- density box -->
+          <rect x="260" y="5" width="100" height="60" fill="#fffbf0" stroke="#d4a017" stroke-width="1.5"/>
+          <text x="310" y="22" font-size="13" fill="#9a7510" text-anchor="middle" font-weight="700">MT length</text>
+          <text x="310" y="35" font-size="11" fill="#9a7510" text-anchor="middle" font-weight="700">(density)</text>
+          <text x="310" y="50" font-size="9" fill="#9a7510" text-anchor="middle">scalar in [0, ∞)</text>
+          <text x="310" y="62" font-size="9" fill="#9a7510" text-anchor="middle">790 baseline · 220 always_catas</text>
+
+          <!-- bottom note -->
+          <text x="180" y="100" font-size="10" fill="#444" text-anchor="middle" font-style="italic">
+            All published numbers (S₂, density, Ω) live here.
+          </text>
+          <text x="180" y="115" font-size="10" fill="#444" text-anchor="middle" font-style="italic">
+            Per-region histograms (step 4) are the SAE's natural input.
+          </text>
+        </g>
+
+      </svg>
+      <div class="caption">
+        <strong>The full pipeline.</strong> Six stages from biology to published metric. The 3D plant cell (step 1) is approximated as a cylinder and unrolled to a 2D rectangle with periodic boundaries in x (step 2). The plane is divided into a 26×26 grid of regions, each ~1 simulation unit on a side (step 3). Per region, MT segments contribute to a length-weighted angle histogram across 36 nematic bins (step 4). Histograms feed the SAE for unsupervised feature discovery (step 5). Aggregated across all regions, you get the scalar global readouts that the field actually reports (step 6).
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── ZOOM ON STEPS 4-5 ─────────────── -->
+  <section>
+    <h2>Step 4 → 5 detail: where the SAE lives</h2>
+
+    <p>The interesting modeling work happens between steps 4 and 5. Step 4 produces ~676 per-region histograms <em>per saved time-point</em> — so each 1hr sim with 10 checkpoints generates ~6,760 of these 36-dim vectors. Pool across multiple sims, conditions, and seeds and you get tens of thousands of samples — enough to train an SAE.</p>
+
+    <div class="diagram-wrap">
+      <svg viewBox="0 0 980 380" width="100%" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <marker id="arrowD" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L9,3 z" fill="#2c5aa0"/>
+          </marker>
+        </defs>
+
+        <!-- Stack of histograms representing data -->
+        <g transform="translate(20, 100)">
+          <text x="110" y="-25" font-size="12" font-weight="700" fill="#444" text-anchor="middle">10,000+ per-region snapshots</text>
+          <text x="110" y="-10" font-size="9" fill="#666" text-anchor="middle">3 conditions × 10 seeds × ~676 regions × ~10 time-points</text>
+
+          <!-- stacked histograms -->
+          <g>
+            <rect x="0" y="0" width="220" height="35" fill="#fffbf0" stroke="#d4a017" stroke-width="1"/>
+            <g fill="#2a9d3f" opacity="0.7">
+              <rect x="2" y="22" width="6" height="13"/>
+              <rect x="9" y="18" width="6" height="17"/>
+              <rect x="16" y="10" width="6" height="25"/>
+              <rect x="23" y="8" width="6" height="27"/>
+              <rect x="30" y="12" width="6" height="23"/>
+              <rect x="37" y="20" width="6" height="15"/>
+              <rect x="44" y="25" width="6" height="10"/>
+              <rect x="51" y="28" width="6" height="7"/>
+              <rect x="58" y="30" width="6" height="5"/>
+            </g>
+            <text x="225" y="22" font-size="9" fill="#666">snapshot 1</text>
+          </g>
+          <g transform="translate(8, 50)">
+            <rect x="0" y="0" width="220" height="35" fill="#fffbf0" stroke="#d4a017" stroke-width="1"/>
+            <g fill="#e67e22" opacity="0.6">
+              <rect x="2" y="20" width="6" height="15"/>
+              <rect x="9" y="25" width="6" height="10"/>
+              <rect x="16" y="20" width="6" height="15"/>
+              <rect x="23" y="18" width="6" height="17"/>
+              <rect x="30" y="15" width="6" height="20"/>
+              <rect x="37" y="22" width="6" height="13"/>
+              <rect x="44" y="25" width="6" height="10"/>
+              <rect x="51" y="22" width="6" height="13"/>
+              <rect x="58" y="20" width="6" height="15"/>
+              <rect x="65" y="22" width="6" height="13"/>
+              <rect x="72" y="20" width="6" height="15"/>
+            </g>
+          </g>
+          <g transform="translate(16, 100)">
+            <rect x="0" y="0" width="220" height="35" fill="#fffbf0" stroke="#d4a017" stroke-width="1"/>
+            <g fill="#c0392b" opacity="0.5">
+              <rect x="2" y="20" width="6" height="15"/>
+              <rect x="9" y="15" width="6" height="20"/>
+              <rect x="16" y="10" width="6" height="25"/>
+              <rect x="23" y="22" width="6" height="13"/>
+              <rect x="30" y="25" width="6" height="10"/>
+              <rect x="37" y="20" width="6" height="15"/>
+              <rect x="44" y="15" width="6" height="20"/>
+              <rect x="51" y="10" width="6" height="25"/>
+              <rect x="58" y="22" width="6" height="13"/>
+            </g>
+          </g>
+          <text x="120" y="160" font-size="14" fill="#888" text-anchor="middle">⋮</text>
+          <text x="120" y="190" font-size="11" fill="#444" text-anchor="middle">148,114 samples (n=10 seeds)</text>
+        </g>
+
+        <!-- arrow into SAE training -->
+        <g transform="translate(290, 175)">
+          <line x1="0" y1="0" x2="60" y2="0" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrowD)"/>
+          <text x="30" y="-10" font-size="10" fill="#2c5aa0" text-anchor="middle" font-weight="600">train</text>
+          <text x="30" y="14" font-size="9" fill="#666" text-anchor="middle" font-style="italic">SAE.step(X)</text>
+        </g>
+
+        <!-- SAE diagram -->
+        <g transform="translate(365, 90)">
+          <text x="120" y="-25" font-size="12" font-weight="700" fill="#444" text-anchor="middle">Sparse autoencoder</text>
+          <text x="120" y="-10" font-size="9" fill="#666" text-anchor="middle">36 → 32 (ReLU) → 36, L1 sparsity</text>
+
+          <!-- encoder/decoder structure -->
+          <!-- input -->
+          <g>
+            <rect x="0" y="60" width="20" height="80" fill="#fffbf0" stroke="#d4a017" stroke-width="1.2"/>
+            <text x="10" y="155" font-size="9" fill="#666" text-anchor="middle">input</text>
+            <text x="10" y="166" font-size="9" fill="#666" text-anchor="middle">36-dim</text>
+          </g>
+          <!-- W_e -->
+          <line x1="25" y1="100" x2="60" y2="100" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrowD)"/>
+          <text x="42" y="93" font-size="9" fill="#2c5aa0" text-anchor="middle">W_e</text>
+          <!-- hidden -->
+          <g>
+            <rect x="65" y="55" width="20" height="90" fill="#f0f4ff" stroke="#2c5aa0" stroke-width="1.5"/>
+            <text x="75" y="160" font-size="9" fill="#1a5fa8" text-anchor="middle">h ∈ R³²</text>
+            <text x="75" y="171" font-size="9" fill="#1a5fa8" text-anchor="middle">(sparse)</text>
+            <!-- show ReLU+sparse pattern: many zeros -->
+            <g fill="#1a5fa8" opacity="0.85">
+              <rect x="67" y="58" width="4" height="20"/>
+              <rect x="73" y="80" width="4" height="55"/>
+              <rect x="79" y="60" width="4" height="40"/>
+              <!-- others zero, blank -->
+            </g>
+          </g>
+          <!-- W_d -->
+          <line x1="90" y1="100" x2="125" y2="100" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrowD)"/>
+          <text x="107" y="93" font-size="9" fill="#2c5aa0" text-anchor="middle">W_d</text>
+          <!-- output -->
+          <g>
+            <rect x="130" y="60" width="20" height="80" fill="#f3fbf5" stroke="#2a9d3f" stroke-width="1.2"/>
+            <text x="140" y="155" font-size="9" fill="#666" text-anchor="middle">x̂</text>
+            <text x="140" y="166" font-size="9" fill="#666" text-anchor="middle">36-dim</text>
+          </g>
+
+          <!-- Loss objective -->
+          <text x="75" y="195" font-size="9" fill="#444" text-anchor="middle">loss = ||x − x̂||² + λ·||h||₁</text>
+
+          <!-- under-svg labels -->
+          <text x="75" y="220" font-size="10" fill="#1a5fa8" text-anchor="middle" font-style="italic">→ 32 orientation-selective features</text>
+          <text x="75" y="232" font-size="10" fill="#1a5fa8" text-anchor="middle" font-style="italic">tile angles 12° → 158°</text>
+        </g>
+
+        <!-- arrow → probe -->
+        <g transform="translate(610, 175)">
+          <line x1="0" y1="0" x2="55" y2="0" stroke="#2c5aa0" stroke-width="2" marker-end="url(#arrowD)"/>
+          <text x="27" y="-10" font-size="10" fill="#2c5aa0" text-anchor="middle" font-weight="600">probe</text>
+        </g>
+
+        <!-- probe output: SAE features vs S₂/Ω -->
+        <g transform="translate(680, 50)">
+          <text x="135" y="0" font-size="12" font-weight="700" fill="#444" text-anchor="middle">What each feature correlates with</text>
+
+          <!-- scatter -->
+          <g transform="translate(0, 20)">
+            <rect x="0" y="0" width="270" height="220" fill="#fff" stroke="#dde" stroke-width="1"/>
+            <!-- axes -->
+            <line x1="135" y1="0" x2="135" y2="220" stroke="#aaa" stroke-width="0.6"/>
+            <line x1="0" y1="110" x2="270" y2="110" stroke="#aaa" stroke-width="0.6"/>
+
+            <!-- features as dots -->
+            <g fill="#2c5aa0" stroke="#222" stroke-width="0.6">
+              <circle cx="135" cy="35" r="5"/>
+              <circle cx="115" cy="55" r="5"/>
+              <circle cx="155" cy="60" r="5"/>
+              <circle cx="125" cy="80" r="5"/>
+              <circle cx="145" cy="100" r="5"/>
+              <circle cx="160" cy="40" r="5"/>
+              <circle cx="100" cy="65" r="5"/>
+              <circle cx="200" cy="50" r="5"/>
+              <circle cx="80" cy="75" r="5"/>
+              <circle cx="180" cy="80" r="5"/>
+              <circle cx="115" cy="160" r="5"/>
+              <circle cx="155" cy="155" r="5"/>
+              <circle cx="100" cy="140" r="5"/>
+              <circle cx="170" cy="170" r="5"/>
+              <circle cx="125" cy="180" r="5"/>
+              <circle cx="180" cy="165" r="5"/>
+              <circle cx="220" cy="180" r="5"/>
+              <circle cx="60" cy="155" r="5"/>
+              <!-- corner outliers — high corr -->
+              <circle cx="140" cy="15" r="5"/>
+              <circle cx="155" cy="200" r="5"/>
+            </g>
+
+            <!-- axis labels -->
+            <text x="135" y="235" font-size="9" fill="#666" text-anchor="middle">corr with S₂ →</text>
+            <text x="-5" y="110" font-size="9" fill="#666" text-anchor="end" transform="rotate(-90, -5, 110)">corr with cos(2Ω) →</text>
+
+            <!-- max labels -->
+            <text x="142" y="12" font-size="8" fill="#1a5fa8">+0.47</text>
+            <text x="158" y="207" font-size="8" fill="#1a5fa8">−0.30</text>
+          </g>
+
+          <text x="135" y="270" font-size="9" fill="#444" text-anchor="middle" font-style="italic">Each dot = one SAE feature.</text>
+          <text x="135" y="282" font-size="9" fill="#444" text-anchor="middle" font-style="italic">Vertical spread huge (features track Ω);</text>
+          <text x="135" y="294" font-size="9" fill="#444" text-anchor="middle" font-style="italic">horizontal spread tiny (features barely track S₂).</text>
+        </g>
+
+      </svg>
+      <div class="caption">
+        <strong>The SAE pipeline in detail.</strong> Per-region histograms (step 4 from the cascade above) are pooled across all conditions and seeds to form a (148,114 × 36) training matrix. An SAE with 32 hidden units learns to reconstruct each histogram through a sparse bottleneck. After training, every alive feature has a preferred orientation. The right panel shows what each feature correlates with — they spread vertically (high correlation with cos(2Ω), up to +0.47) and cluster narrowly horizontally (almost no correlation with S₂ magnitude). The SAE found Ω, not S₂.
+      </div>
+    </div>
+  </section>
+
+  <!-- ─────────────── ABLATION POINT MAP ─────────────── -->
+  <section>
+    <h2>Where each ablation intervenes in the pipeline</h2>
+
+    <p>The mapping cascade also explains where each of today's ablations operates. Different interventions touch different stages — and which stages they touch determines what they can possibly show.</p>
+
+    <table>
+      <thead>
+        <tr><th>Intervention</th><th>Touches</th><th>What it tests</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>no_zipper</code> (50/50 cross/catas)</td>
+          <td>Step 2 (the rule in <code>zip_cat_clean</code> that fires inside the rectangle)</td>
+          <td>Removes the angle-correlation mechanism without unbounded MT accumulation. The "clean alignment-off control."</td>
+        </tr>
+        <tr>
+          <td><code>always_catas</code></td>
+          <td>Step 2 (collision outcome forced to catastrophe)</td>
+          <td>Sparse MT population. High per-region noise floor — illuminated the small-sample bias finding.</td>
+        </tr>
+        <tr>
+          <td><code>always_cross</code></td>
+          <td>Step 2 (collision outcome forced to crossover)</td>
+          <td>Unbounded MT accumulation (collision rule was also doing density control). Crashed at 4.7 GB.</td>
+        </tr>
+        <tr>
+          <td>Neural surrogate (full MLP)</td>
+          <td>Step 2 substitute (MLP replaces <code>zip_cat</code> output)</td>
+          <td>Crashed bundle bookkeeping — simulator's downstream (in step 3 / region tracking) is intolerant of approximation in zipper geometry.</td>
+        </tr>
+        <tr>
+          <td><b>Neural surrogate (gated MLP)</b></td>
+          <td>Step 2 partial substitute (MLP only decides cross/catas at large incident; deterministic zipper kept)</td>
+          <td><b>Works end-to-end.</b> Hybrid rule → baseline-equivalent S₂. Demonstrates the right interface for partial surrogates.</td>
+        </tr>
+        <tr>
+          <td><code>baseline_isotropic</code> / <code>sample_angle</code> patch</td>
+          <td>(attempted on a code path that's gated by <code>LDD_bool=True</code>)</td>
+          <td>Was attacking dead code. Default BY-2 mode uses isotropic nucleation in step 2 directly — no sample_angle ever called.</td>
+        </tr>
+        <tr>
+          <td>SAE training</td>
+          <td>Step 5 (no intervention; passive observation)</td>
+          <td>Rediscovered orientation as the natural feature axis. Unsupervised.</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    <p>Companion to: <a href="https://github.com/bigsnarfdude/elastic-mt-refactor/blob/refactor/split-zip-cat/docs/findings.html">docs/findings.html</a></p>
+    <p>2026-05-20 · refactor/split-zip-cat · 12 commits</p>
+  </footer>
+
+</div>
+</body>
+</html>
