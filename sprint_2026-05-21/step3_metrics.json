@@ -1,0 +1,35 @@
+{
+  "baseline": {
+    "label": "baseline",
+    "seed": 42,
+    "hours": 1,
+    "wall_s": 3191.2578020095825,
+    "status": "ok",
+    "error": null,
+    "s2_final": 0.7843155812677958,
+    "density_final": 971.4191164994199,
+    "n_snapshots": 20
+  },
+  "gated_v2": {
+    "label": "gated_v2",
+    "seed": 42,
+    "hours": 1,
+    "wall_s": 3188.5787241458893,
+    "status": "ok",
+    "error": null,
+    "s2_final": 0.7843155812677958,
+    "density_final": 971.4191164994199,
+    "n_snapshots": 20
+  },
+  "full_mlp_v2": {
+    "label": "full_mlp_v2",
+    "seed": 42,
+    "hours": 1,
+    "wall_s": 226.54742097854614,
+    "status": "crash",
+    "error": "Traceback (most recent call last):\n  File \"/Users/vincent/Desktop/microtubles/elastic-mt-refactor/sprint_2026-05-21/step3_verify_gated.py\", line 49, in run_condition\n    sa.simulate(seed, hours, str(work) + '/', False, False, troubleshoot=False)\n  File \"/Users/vincent/Desktop/microtubles/elastic-mt-refactor/sim_algs_fixed_region.py\", line 2771, in simulate\n    last_result = update(mt_list,mt_sublist,bdl_list,branch_list,region_list,event_list,Result,global_p)\n                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/vincent/Desktop/",
+    "s2_final": null,
+    "density_final": null,
+    "n_snapshots": 0
+  }
+}

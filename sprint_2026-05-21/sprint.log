@@ -93,3 +93,65 @@ STEP 2 — Probe MLP hidden layer
   step 2 wall: 14s
 
 ▶ STEP 3 — Verifying in simulator (baseline / gated_v2 / full_mlp_v2)
+============================================================
+STEP 3 — Verify label-100% MLP in the simulator
+============================================================
+
+[baseline] starting seed=42 hours=1
+Seed 42 started with MainProcess
+
+Seed 42 @ 1.006333120888895 hr w/ wall time 1579.85498380661 / 26.330916396776836 / 0.4388486066129473 s/min/hr 
+ Elapsed wall time since last hr 1579.85498380661 / 26.330916396776836 / 0.4388486066129473 s/min/hr 
+
+Total wall time for seed 42 : 3188.345537662506 / 53.139092294375104 / 0.885651538239585 s/min/hr 
+ Nuc, free, cross, t: 113762 51049 77192 28.800006699158217 
+
+[baseline] ok wall=3191s
+
+Loading models/learned_zipcat_v2.npz ...
+
+[gated_v2] starting seed=42 hours=1
+Seed 42 started with MainProcess
+
+Seed 42 @ 1.006333120888895 hr w/ wall time 1532.5347881317139 / 25.542246468861897 / 0.42570410781436496 s/min/hr 
+ Elapsed wall time since last hr 1532.5347881317139 / 25.542246468861897 / 0.42570410781436496 s/min/hr 
+
+Total wall time for seed 42 : 3185.782721042633 / 53.096378684043884 / 0.8849396447340647 s/min/hr 
+ Nuc, free, cross, t: 113762 51049 77192 28.800006699158217 
+
+[gated_v2] ok wall=3189s
+
+[full_mlp_v2] starting seed=42 hours=1
+Seed 42 started with MainProcess
+
+[full_mlp_v2] crash wall=227s
+
+============================================================
+STEP 3 SUMMARY
+============================================================
+  baseline        status=ok      S2=0.7843  density=971.4  wall=3191s
+  gated_v2        status=ok      S2=0.7843  density=971.4  wall=3189s
+  full_mlp_v2     status=crash   S2=(crash)  density=(crash)  wall=227s
+
+  gated_v2 matches baseline?  YES  (|Δ| = 0.00e+00)
+
+  full_mlp_v2 status: crash
+
+  metrics → sprint_2026-05-21/step3_metrics.json
+  step 3 wall: 6608s
+
+================================================================
+SPRINT COMPLETE — total wall: 6684s (111m 24s)
+  step 1 (retrain):  62s
+  step 2 (probe):    14s
+  step 3 (verify):   6608s
+================================================================
+
+Results:
+  models/learned_zipcat_v2.npz
+  sprint_2026-05-21/step1_metrics.json
+  sprint_2026-05-21/step2_metrics.json
+  sprint_2026-05-21/step2_sae_features.png
+  sprint_2026-05-21/step2_feat_by_outcome.png
+  sprint_2026-05-21/step3_metrics.json
+  sprint_2026-05-21/sprint.log  (this file)
