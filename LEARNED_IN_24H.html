@@ -421,11 +421,13 @@ collision.decision.decide_outcome = <span class="k">lambda</span> a1, a2, r: <sp
   <p>The headline findings (zippering as rate, density compounding, SAE rediscovery, gated MLP equivalence) are unaffected by this correction. They were measured at the right level. The error was in the <em>interpretation</em> of the floor, not in the trajectories themselves.</p>
 
   <!-- ============================================================ -->
-  <h2 id="for-tim" class="section-6">6. Questions for Tim</h2>
+  <h2 id="for-tim" class="section-6">6. Things I'm curious about (to chat over with Tim)</h2>
+
+  <p style="font-size: 0.93rem; color: #666; margin-bottom: 0.5rem;">Not a list of asks. Just stuff I bumped into where Tim's perspective would change my read.</p>
 
   <div class="question-list">
     <ol>
-      <li><strong>Refactor PR.</strong> Can I PR the refactor branch against your <code>main</code>? It's mathematically equivalent at the unit level and statistically equivalent end-to-end; nothing else in your code changes. Gives you a clean ablation testbed and gets the 300-line <code>zip_cat</code> down to three small modules. About a day of your time to review the physics.</li>
+      <li><strong>The refactor itself.</strong> The modular split is working in my branch. If any of it's useful to you, all yours — graft it, change it, ignore it, whatever. I'm not staging it as a contribution to your canonical repo; just want to walk through the split with you if you're curious why I cut where I cut.</li>
       <li><strong>The catastrophe-source question.</strong> Right now <code>r_c</code> (spontaneous catastrophe) and collision-induced catastrophe share one code path. For clean ablation we'd want to tag the source of each catastrophe. Do these have the same biological meaning, or are they actually two different things? If different, that's the right modular boundary to introduce next.</li>
       <li><strong>S₂ reporting convention.</strong> When you report S₂ in your thesis, do you also report MT density? The 9h overnight data shows S₂(baseline)=0.86 at density 1713 vs S₂(always_catas)=0.70 at density 220 — both look like "high alignment" if you only report S₂. For anyone using your S₂ as ground truth for cross-comparison with experiments, the density context seems load-bearing.</li>
       <li><strong>Do you have 10-hour run pickles?</strong> The GH200 surrogate sweep would like real ground-truth trajectories from runs longer than the 1-hour sweeps in this work. Even one or two of your own 10h pickles would unblock the active-learning loop.</li>
@@ -446,7 +448,7 @@ collision.decision.decide_outcome = <span class="k">lambda</span> a1, a2, r: <sp
     <li style="margin: 0.4rem 0;"><strong>Elastic-deflection refactor.</strong> Separate trajectory ID from elastic-bend uniqueness so <code>deflect_on=False</code> can be an ablation. About a day. Worth doing before the next experimental sweep.</li>
     <li style="margin: 0.4rem 0;"><strong>SAE on full trajectory across conditions.</strong> So far the SAE was trained on baseline only. Re-train on combined (baseline + no_zipper + always_catas) and ask: do the same angular features show up under all three, or does no_zipper develop a categorically different feature set?</li>
     <li style="margin: 0.4rem 0;"><strong>Surrogate active-learning loop on GH200.</strong> The plan in EXPERIMENT_PROTOCOL_MT_ABLATION.md, now retargeted: surrogate input is (parameters + decision_rule_id), output is (S₂(t), density(t)). Use the refactored ablation surface as a discrete dimension of the input.</li>
-    <li style="margin: 0.4rem 0;"><strong>Tim's review.</strong> This document + the refactor PR. Pinpoints what would and wouldn't be appropriate to write up jointly, and the open physics question (catastrophe-source separation) is most efficiently resolved with five minutes of his time.</li>
+    <li style="margin: 0.4rem 0;"><strong>Talk to Tim.</strong> Walk through this doc together. The catastrophe-source question (§6.2) is the one I most want his read on.</li>
   </ol>
 
   <footer>

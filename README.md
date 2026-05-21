@@ -112,15 +112,17 @@ Then two surrogates:
 
 ---
 
-## What I want to ask Tim
+## Things I'm curious about (to chat over)
 
-(In rough priority order.)
+Not a list of asks — just what I bumped into where Tim's perspective would change my read.
 
 1. **`LDD_bool` semantics.** Does `LDD_bool = False` in default BY-2 actually disable branched nucleation entirely? If so, my Day 1 take on the floor was wrong (see point 3 above) and the corrected story is in `LEARNED_IN_24H.html` §5.
 2. **Catastrophe source.** Right now `r_c` (spontaneous catastrophe) and collision-induced catastrophe share one code path. To cleanly ablate "what kills MTs?" we'd want to tag the source of each. Are these biologically the same process, or two distinct things?
-3. **Do you report S₂ alongside MT density in your thesis?** If only S₂, the always_catas-style cases would read "high alignment" when really it's "low density with biased estimator."
-4. **The `deflect_on = False` crash.** Tried to ablate elastic deflection. `comparison_fns.region_traj.add_traj` asserts no two trajectories share both angle and point — true under elasticity, false when MTs go straight. Patching crashes deeper. The next refactor is to separate trajectory ID from elastic-bend uniqueness. 30 min together would unblock it.
-5. **Do you have 10-hour run pickles I could compare against?** The GH200 surrogate sweep wants real trajectories as ground truth. Even one or two would unblock the active-learning loop.
+3. **S₂ + density convention.** If you report only S₂ in the thesis, the always_catas-style cases (high S₂ at very low density) would read as "aligned" when really they're estimator-bias. Curious how you've thought about this.
+4. **The `deflect_on = False` crash.** Tried to ablate elastic deflection. `comparison_fns.region_traj.add_traj` asserts no two trajectories share both angle and point — true under elasticity, false when MTs go straight. Patching crashes deeper. The next refactor is to separate trajectory ID from elastic-bend uniqueness. If we ever sit down to look, this is the one I'd most want to do with you.
+5. **10-hour run pickles.** If you happen to have any of your own 10h runs around, it'd be a useful sanity check against my refactor's trajectories. Not blocking anything — just nice to have.
+
+The refactor itself: if you find any of the modular split useful, all yours — graft it, change it, ignore it, whatever. I'm working in a branch on my fork; nothing to push your way unless you want it.
 
 ---
 
