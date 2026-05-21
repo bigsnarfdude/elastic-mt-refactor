@@ -64,9 +64,48 @@
 
   <header>
     <h1>From the Cell to the SAE: Every Mapping in One Diagram</h1>
-    <div class="sub">How Tim's plant cell becomes a 2D rectangle, becomes a grid of regions, becomes histograms, becomes SAE features, becomes a single scalar.</div>
+    <div class="sub">From the real plant cell (confocal microscopy) → Tim's simulator → SAE features → published scalars.</div>
     <div class="meta">2026-05-20 · companion to docs/findings.html</div>
   </header>
+
+  <!-- ─────────────── STEP 0: THE BIOLOGY (THE GROUND TRUTH) ─────────────── -->
+  <section>
+    <h2>Step 0 — The biology (what we're trying to explain)</h2>
+
+    <p>These are GFP-labeled cortical microtubules in Arabidopsis hypocotyl cells under confocal microscopy. The whole pipeline below exists to model the self-organization you see in these images.</p>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+      <div class="diagram-wrap" style="padding: 0.5rem;">
+        <img src="hypocotyl.jpg" alt="Cortical MT array, hypocotyl cell"
+             style="width: 100%; height: auto; display: block; border-radius: 4px; background: #000;"/>
+        <div class="caption" style="padding: 0.5rem;">
+          <strong>Image 1.</strong> Single elongated cell with a diagonal MT array. Visible bundles and clear local
+          waviness. By eye this looks like S₂ ≈ 0.5–0.6 — strong directional preference but plenty of disorder
+          between bundles.
+        </div>
+      </div>
+      <div class="diagram-wrap" style="padding: 0.5rem;">
+        <img src="hypocotyl2.jpg" alt="Multi-cell strongly aligned cortical MT arrays"
+             style="width: 100%; height: auto; display: block; border-radius: 4px; background: #000;"/>
+        <div class="caption" style="padding: 0.5rem;">
+          <strong>Image 2.</strong> Multiple parallel cells, each with a strongly aligned transverse array — the
+          fully-saturated case. S₂ probably ≈ 0.85+. Bands tile the cell width with near-perfect parallelism.
+          This is the endpoint Tim's simulator approaches at long times.
+        </div>
+      </div>
+    </div>
+
+    <p>The simulator's job is to reproduce this self-organization from local rules: nucleation, growth,
+    collisions, anchoring. The interpretability work (SAE, MLP, ablations) sits on top — can we recover the
+    <em>mechanism</em> that turns randomly-nucleated MTs into the bands you see in image 2? The cascade below
+    traces how the pipeline operates between these images and the scalar S₂ the field uses to summarize them.</p>
+
+    <p style="font-size: 0.88rem; color: #666; font-style: italic;">Connection to the four findings: image 1 corresponds to the
+    early-time / sparse phase that <code>no_zipper</code> stays stuck at (S₂ ~0.56 noise floor). Image 2
+    corresponds to the saturated baseline regime (S₂ ~0.78 at 1 sim-hour, and presumably higher at 10
+    sim-hours). The <em>rate</em> at which the system moves from image-1-like states to image-2-like states is
+    what zippering controls — that's finding 1.</p>
+  </section>
 
   <!-- ─────────────── BIG OVERVIEW SVG ─────────────── -->
   <section>
