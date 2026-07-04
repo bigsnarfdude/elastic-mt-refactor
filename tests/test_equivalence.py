@@ -143,6 +143,66 @@ def test_zipper_geometry_is_closer_alignment():
             f"chose worse alignment: a1={a1} a2={a2} chose={new_angle}"
 
 
+# ── Ablation hook (decision_fn) isolation contract — SPRINT_S1 ────────────────
+# The rule-ablation harness threads a `decision_fn` through zip_cat_clean (and
+# the zip_cat shim) so it can override the collision decision at sim_algs:1023
+# WITHOUT monkey-patching the global decision.decide_outcome (which would also
+# corrupt the branch-nucleation geometry calls at 1379/2020). These tests pin
+# the invariant that earns trust in every ablation row: None/identity is
+# bit-for-bit inert, and a real override actually fires.
+
+@pytest.mark.parametrize("a1,a2,r", [
+    (0.1, 0.2, 0), (0.3, 0.5, 0), (0.1, 1.0, 0), (0.1, 1.0, 1),
+    (0.1, pi + 0.2, 0), (5.5, 0.3, 0), (1.6, 1.8, 0), (3.5, 3.7, 0),
+])
+def test_decision_fn_none_is_inert(a1, a2, r):
+    """decision_fn=None must reproduce the no-arg (real-rule) result exactly."""
+    from collision.api import zip_cat_clean
+    pt, pt_prev = [0.5, 0.5], [0.4, 0.4]
+    base = zip_cat_clean(a1, a2, pt, pt_prev, r)
+    none = zip_cat_clean(a1, a2, pt, pt_prev, r, decision_fn=None)
+    assert base[2] == none[2]
+    assert _ang_equal(base[0], none[0])
+    assert _pt_equal(base[1], none[1]) and _pt_equal(base[3], none[3])
+
+
+def test_decision_fn_identity_is_inert():
+    """Injecting decide_outcome itself as decision_fn changes nothing — the
+    full-sim baseline (ABLATION=None) and an identity injection must be the
+    same path. 1000 random inputs."""
+    from collision.api import zip_cat_clean
+    from collision.decision import decide_outcome
+    rng = np.random.default_rng(123)
+    pt, pt_prev = [0.5, 0.5], [0.4, 0.4]
+    for _ in range(1000):
+        a1, a2, r = rng.uniform(0, 2*pi), rng.uniform(0, 2*pi), int(rng.integers(0, 2))
+        base = zip_cat_clean(a1, a2, pt, pt_prev, r)
+        inj = zip_cat_clean(a1, a2, pt, pt_prev, r, decision_fn=decide_outcome)
+        assert base[2] == inj[2] and _ang_equal(base[0], inj[0])
+
+
+def test_decision_fn_override_fires():
+    """A custom decision_fn must actually replace the outcome (the hook works)."""
+    from collision.api import zip_cat_clean
+    pt, pt_prev = [0.5, 0.5], [0.4, 0.4]
+    # force crossover on what would naturally be a shallow zipper
+    assert zip_cat_clean(0.1, 0.2, pt, pt_prev, 0,
+                         decision_fn=lambda a1, a2, r: 'cross')[2] == 'cross'
+    # force catastrophe everywhere
+    assert zip_cat_clean(0.1, 0.2, pt, pt_prev, 1,
+                         decision_fn=lambda a1, a2, r: 'catas')[2] == 'catas'
+
+
+def test_zip_cat_shim_forwards_decision_fn():
+    """The zippering.zip_cat shim (what sim_algs:1023 calls) forwards the hook."""
+    import zippering
+    pt, pt_prev = [0.5, 0.5], [0.4, 0.4]
+    assert zippering.zip_cat(0.1, 0.2, pt, pt_prev, 0,
+                             decision_fn=lambda a1, a2, r: 'cross')[2] == 'cross'
+    # and default (no hook) is unchanged
+    assert zippering.zip_cat(0.1, 0.2, pt, pt_prev, 0)[2] in ('zipper+', 'zipper-')
+
+
 if __name__ == '__main__':
     # quick smoke run without pytest
     print("Running specific cases...")

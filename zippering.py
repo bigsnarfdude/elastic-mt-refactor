@@ -30,7 +30,7 @@ d = dr
 dr_tol = d / sin(.01)
 
 
-def zip_cat(angle1, angle2, pt, pt_prev, r):
+def zip_cat(angle1, angle2, pt, pt_prev, r, decision_fn=None):
     """Determine collision outcome and post-collision geometry.
 
     Backward-compatible shim — same signature and 5-tuple return as before.
@@ -45,6 +45,12 @@ def zip_cat(angle1, angle2, pt, pt_prev, r):
     pt : point of intersection
     pt_prev : previous vertex of incoming MT
     r : 0 or 1 random number
+    decision_fn : callable, optional
+        Ablation hook ``(angle1, angle2, r) -> label`` forwarded to
+        ``zip_cat_clean``. ``None`` (default) => the real rule, leaving the
+        un-ablated path bit-for-bit unchanged. Only the real-collision call
+        site (sim_algs:1023) passes this; the branch-nucleation geometry
+        calls (1379, 2020) leave it None so they keep the real rule.
 
     Returns
     -------
@@ -56,7 +62,7 @@ def zip_cat(angle1, angle2, pt, pt_prev, r):
                  had commented-out error tracking; preserved for compatibility)
     """
     return _zip_cat_clean(angle1, angle2, pt, pt_prev, r,
-                          no_bdl_id=no_bdl_id, d=d)
+                          no_bdl_id=no_bdl_id, d=d, decision_fn=decision_fn)
 
 
 def _zip_cat_original(angle1, angle2, pt, pt_prev, r):

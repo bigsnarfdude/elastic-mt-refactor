@@ -23,7 +23,7 @@ from . import geometry   # NOTE: module import (late binding) — see docstring
 
 
 def zip_cat_clean(angle1, angle2, pt, pt_prev, r,
-                  no_bdl_id=False, d=0.0):
+                  no_bdl_id=False, d=0.0, decision_fn=None):
     """Refactored zip_cat — same return contract as the original.
 
     Parameters
@@ -43,6 +43,16 @@ def zip_cat_clean(angle1, angle2, pt, pt_prev, r,
         ``parameters.no_bdl_id``.
     d : float, optional
         Step-back distance scale. Default reads from ``parameters.dr``.
+    decision_fn : callable, optional
+        Ablation hook. A function ``(angle1, angle2, r) -> label`` used in
+        place of ``decision.decide_outcome`` to override the collision
+        outcome. Default ``None`` falls back to ``decision.decide_outcome``
+        (so the un-ablated path is bit-for-bit unchanged). Threading the
+        decision through as an argument — rather than monkey-patching the
+        global ``decision.decide_outcome`` — lets the simulator ablate the
+        *real-collision* site (sim_algs:1023) WITHOUT touching the
+        branch-nucleation geometry calls (sim_algs:1379, 2020), which must
+        keep using the real rule. See SPRINT_S1_rule_ablation.md (Gotcha A).
 
     Returns
     -------
@@ -50,7 +60,8 @@ def zip_cat_clean(angle1, angle2, pt, pt_prev, r,
         Matches the original ``zip_cat`` 5-tuple contract.
     """
     # Late-bound lookups — monkey-patching the module attribute Just Works.
-    outcome = decision.decide_outcome(angle1, angle2, r)
+    # decision_fn (when given) overrides only this call; None => real rule.
+    outcome = (decision_fn or decision.decide_outcome)(angle1, angle2, r)
 
     if outcome in ('zipper+', 'zipper-'):
         # Pass the outcome label to geometry so the new_angle is consistent

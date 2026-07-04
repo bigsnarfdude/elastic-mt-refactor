@@ -35,6 +35,13 @@ import pickle
 from multiprocessing import current_process
 import sys
 from inspect import currentframe #debugging
+
+# Rule-ablation hook (SPRINT_S1). None => the real collision rule (baseline,
+# bit-for-bit unchanged). A runner sets this to a fn (angle1, angle2, r) -> label
+# to override ONLY the real-collision decision at site ~1023. Branch-nucleation
+# geometry (sites ~1379, ~2020) deliberately does NOT pass it, so it stays on the
+# real rule. Late-bound global lookup => assigning sim_algs.ABLATION takes effect.
+ABLATION = None
 def get_linenumber():
     cf = currentframe()
     return cf.f_back.f_lineno
@@ -1020,7 +1027,7 @@ def update(mt_list,mt_sublist,bdl_list,branch_list,region_list,event_list,event,
         # angle_traj = mt2.traj[seg_idx]
         # angle2 = region_list[mt2.region].angle[angle_traj]
         #mt2.angle[seg_idx]
-        zip_res = zip_cat(mt1.angle[-1],mt2.angle[seg_idx],pt,mt1.seg[-1],r) #determine collision geometry
+        zip_res = zip_cat(mt1.angle[-1],mt2.angle[seg_idx],pt,mt1.seg[-1],r, decision_fn=ABLATION) #determine collision geometry (ABLATION hook, S1)
         #TODO use traj angle for increased accuracy?
         new_pt,new_angle = zip_res[1], zip_res[0]
         resolve = zip_res[2]
