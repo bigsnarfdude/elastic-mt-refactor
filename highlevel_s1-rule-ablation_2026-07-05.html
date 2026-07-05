@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>S1 Rule Ablation — Causal Table</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #fafafa;
+    --fg: #222;
+    --fg-strong: #111;
+    --muted: #666;
+    --muted2: #999;
+    --card-bg: #fff;
+    --border: #e8e8e8;
+    --th-bg: #f5f5f5;
+    --code-bg: #f5f5f5;
+    --interp-bg: #f8f9ff;
+    --interp-border: #dce3f5;
+    --pass-bg: #eaf7ec;
+    --pass-border: #2a9d3f;
+    --pass-text: #1e7a30;
+    --green: #2a9d3f;
+    --amber: #d4a017;
+    --red: #c0392b;
+    --blue: #2c5aa0;
+    --row-a: #f0f4ff;
+    --row-b: #fff8f0;
+    --row-c: #fff0f0;
+    --row-d: #f5f0fa;
+    --row-e: #f0fbf3;
+    --grid: #eeeeee;
+    --axis-text: #aaaaaa;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161b;
+      --fg: #dcdde2;
+      --fg-strong: #f4f4f6;
+      --muted: #a6a8b0;
+      --muted2: #7a7c85;
+      --card-bg: #1c1f26;
+      --border: #2b2e37;
+      --th-bg: #23262f;
+      --code-bg: #23262f;
+      --interp-bg: #191c2a;
+      --interp-border: #323a55;
+      --pass-bg: #14261a;
+      --pass-border: #3fbf5b;
+      --pass-text: #6fd987;
+      --green: #3fbf5b;
+      --amber: #e0b23a;
+      --red: #e0655a;
+      --blue: #6f9fd8;
+      --row-a: #1b2130;
+      --row-b: #262019;
+      --row-c: #291c1c;
+      --row-d: #241d2c;
+      --row-e: #17251c;
+      --grid: #2a2d36;
+      --axis-text: #6c6e78;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14161b; --fg: #dcdde2; --fg-strong: #f4f4f6; --muted: #a6a8b0; --muted2: #7a7c85;
+    --card-bg: #1c1f26; --border: #2b2e37; --th-bg: #23262f; --code-bg: #23262f;
+    --interp-bg: #191c2a; --interp-border: #323a55; --pass-bg: #14261a; --pass-border: #3fbf5b;
+    --pass-text: #6fd987; --green: #3fbf5b; --amber: #e0b23a; --red: #e0655a; --blue: #6f9fd8;
+    --row-a: #1b2130; --row-b: #262019; --row-c: #291c1c; --row-d: #241d2c; --row-e: #17251c;
+    --grid: #2a2d36; --axis-text: #6c6e78;
+  }
+  :root[data-theme="light"] {
+    --bg: #fafafa; --fg: #222; --fg-strong: #111; --muted: #666; --muted2: #999;
+    --card-bg: #fff; --border: #e8e8e8; --th-bg: #f5f5f5; --code-bg: #f5f5f5;
+    --interp-bg: #f8f9ff; --interp-border: #dce3f5; --pass-bg: #eaf7ec; --pass-border: #2a9d3f;
+    --pass-text: #1e7a30; --green: #2a9d3f; --amber: #d4a017; --red: #c0392b; --blue: #2c5aa0;
+    --row-a: #f0f4ff; --row-b: #fff8f0; --row-c: #fff0f0; --row-d: #f5f0fa; --row-e: #f0fbf3;
+    --grid: #eeeeee; --axis-text: #aaaaaa;
+  }
+
+  body { background: var(--bg); color: var(--fg); font: 16px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 2.5rem 2rem 4rem; }
+
+  h1 { font-size: 1.6rem; color: var(--fg-strong); }
+  .subtitle { color: var(--muted); font-size: 0.95rem; margin-top: 0.3rem; }
+  .date-line { color: var(--muted2); font-size: 0.85rem; margin-top: 0.2rem; font-family: "SF Mono", Consolas, monospace; }
+
+  .status-bar { background: var(--pass-bg); border-left: 4px solid var(--pass-border); border-radius: 4px; padding: 0.75rem 1rem; margin: 1.5rem 0; font-size: 0.9rem; }
+  .status-bar strong { color: var(--pass-text); }
+
+  h2 { font-size: 1.1rem; color: var(--fg); opacity: 0.9; border-left: 3px solid var(--red); padding-left: 0.75rem; margin: 2rem 0 1rem; }
+
+  .tldr { background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+  .tldr ul { padding-left: 1.2rem; }
+  .tldr li { margin: 0.4rem 0; font-size: 0.95rem; }
+
+  .table-wrap { overflow-x: auto; margin-bottom: 1.25rem; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.87rem; }
+  th { background: var(--th-bg); padding: 0.6rem 0.7rem; text-align: left; color: var(--muted); font-weight: 600; border-bottom: 2px solid var(--border); white-space: nowrap; }
+  td { padding: 0.6rem 0.7rem; border-bottom: 1px solid var(--border); font-family: "SF Mono", Consolas, monospace; font-size: 0.82rem; white-space: nowrap; }
+  tr:last-child td { border-bottom: none; }
+  .row-baseline { background: var(--row-a); }
+  .row-nozipper { background: var(--row-b); }
+  .row-zip2cross{ background: var(--row-e); }
+  .row-noindcat { background: var(--row-d); }
+  .row-catas    { background: var(--row-c); }
+  td.label { font-family: inherit; font-size: 0.88rem; font-weight: 600; }
+  .infeasible-note { font-size: 0.85rem; color: var(--muted); margin: 0.5rem 0 2rem; font-style: italic; }
+
+  .chart-row { display: flex; gap: 1.25rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .chart-wrap { background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1rem 0.5rem; flex: 1 1 380px; min-width: 300px; }
+  .chart-title { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+  svg { display: block; width: 100%; height: auto; }
+  .grid-line { stroke: var(--grid); stroke-width: 1; }
+  .axis-label { fill: var(--axis-text); font: 10px "SF Mono", Consolas, monospace; }
+  .series-line { fill: none; stroke-width: 2.25; stroke-linejoin: round; stroke-linecap: round; }
+
+  .legend { display: flex; gap: 1.1rem; flex-wrap: wrap; margin: 0.75rem 0 0.25rem; font-size: 0.8rem; }
+  .legend-item { display: flex; align-items: center; gap: 0.4rem; color: var(--fg); }
+  .legend-line { display: inline-block; width: 22px; height: 3px; border-radius: 2px; }
+
+  .findings { display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem; }
+  .finding { background: var(--card-bg); border: 1px solid var(--border); border-radius: 6px; padding: 1rem 1.25rem; border-left-width: 4px; }
+  .finding.confirmed  { border-left-color: var(--green); }
+  .finding.suggestive { border-left-color: var(--amber); }
+  .finding.anomaly    { border-left-color: var(--red); }
+  .finding.open       { border-left-color: var(--blue); }
+  .finding-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.3rem; }
+  .confirmed  .finding-label { color: var(--green); }
+  .suggestive .finding-label { color: var(--amber); }
+  .anomaly    .finding-label { color: var(--red); }
+  .open       .finding-label { color: var(--blue); }
+  .finding p { font-size: 0.95rem; margin: 0; }
+  .finding .num { font-family: "SF Mono", Consolas, monospace; font-weight: 600; }
+
+  .interpretation { background: var(--interp-bg); border: 1px solid var(--interp-border); border-radius: 6px; padding: 1.25rem 1.5rem; margin-bottom: 2rem; }
+  .interpretation p { margin: 0.5rem 0; font-size: 0.95rem; }
+  .interpretation p:first-child { margin-top: 0; }
+
+  footer { border-top: 1px solid var(--border); padding-top: 1rem; color: var(--muted2); font-size: 0.8rem; margin-top: 1rem; }
+  footer code { font-family: "SF Mono", Consolas, monospace; background: var(--code-bg); padding: 1px 4px; border-radius: 2px; }
+  code { font-family: "SF Mono", Consolas, monospace; background: var(--code-bg); padding: 1px 4px; border-radius: 2px; font-size: 0.9em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>S1 Rule Ablation — Causal Table</h1>
+  <div class="subtitle">5 conditions &times; 5 seeds, 10 sim-hours each — what actually drives global order?</div>
+  <div class="date-line">2026-07-05 &middot; elastic-mt-refactor/s1_results &middot; 25 runs, all status=ok</div>
+
+  <div class="status-bar">
+    <strong>Sanity gate: PASS.</strong> baseline mean s2_region_lw = <strong>0.8538</strong> (expected ~0.85) &middot; no_zipper mean s2_region_lw = <strong>0.5683</strong> (expected ~0.57). Both reproduce the prior v0.2 benchmark — harness is trustworthy.
+  </div>
+
+  <div class="tldr">
+    <strong>TL;DR</strong>
+    <ul>
+      <li>The no_zipper vs zipper_to_cross split isolates <em>survival</em> from <em>alignment</em>. Removing survival (no_zipper: shallow collisions die) collapses both order and density. Removing only the explicit alignment step (zipper_to_cross: shallow collisions cross over and live) barely dents order — global order actually comes out higher than baseline. Survival + steep-collision catastrophe is the causal driver, not the alignment step itself. This reproduces the founding CorticalSim (Tindemans/Deinum/Mulder) result by ablation.</li>
+      <li><code>s2_region_lw</code> runs inflated relative to <code>s2_global</code> in 4 of 5 conditions &mdash; most starkly <code>always_catas</code>: lw <span class="num">0.71</span> vs global <span class="num">0.06</span> (near-isotropic). No real mechanism makes the array 71% locally ordered while 6% ordered array-wide, so s2_global is the measure to trust. <code>zipper_to_cross</code> is the one condition where lw &asymp; global (gap 0.02) &mdash; the fingerprint of order that's genuinely array-wide, not a per-region artifact.</li>
+      <li>Artifact check on <code>zipper_to_cross</code>'s high s2_global (0.89, above baseline's 0.36): the trajectory rises smoothly across all 5 seeds and the seed spread <em>shrinks</em> from std 0.09 at 1h to std 0.005 at 10h — a real, reproducible convergence, not a metric jump. Verdict: real effect.</li>
+      <li><code>always_cross</code> (6th condition) is absent: infeasible at 10 sim-hr &mdash; density runaway, no MT ever removed, hit 13&ndash;15 GB RAM / 6&ndash;8 CPU-hr without finishing the first 1-hr snapshot. Killed. Qualitative result only.</li>
+    </ul>
+  </div>
+
+  <h2>Causal Table — mean &plusmn; std (n=5 seeds)</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Condition</th>
+          <th>s2_region_lw final</th>
+          <th>s2_global final</th>
+          <th>density final</th>
+          <th>s2 slope 0&ndash;2h</th>
+          <th>time to s2_lw=0.8</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="row-baseline">
+          <td class="label">baseline</td>
+          <td>0.8538 &plusmn; 0.0139</td>
+          <td>0.3606 &plusmn; 0.0927</td>
+          <td>1641.8 &plusmn; 158.2</td>
+          <td>0.1114 &plusmn; 0.0090</td>
+          <td>1.736h &plusmn; 0.274</td>
+        </tr>
+        <tr class="row-nozipper">
+          <td class="label">no_zipper</td>
+          <td>0.5683 &plusmn; 0.0071</td>
+          <td>0.0722 &plusmn; 0.0207</td>
+          <td>364.5 &plusmn; 9.4</td>
+          <td>&minus;0.0002 &plusmn; 0.0042</td>
+          <td>never (5/5)</td>
+        </tr>
+        <tr class="row-zip2cross">
+          <td class="label">zipper_to_cross</td>
+          <td>0.9135 &plusmn; 0.0024</td>
+          <td>0.8923 &plusmn; 0.0049</td>
+          <td>1842.4 &plusmn; 83.2</td>
+          <td>0.1429 &plusmn; 0.0142</td>
+          <td>1.165h &plusmn; 0.153</td>
+        </tr>
+        <tr class="row-noindcat">
+          <td class="label">no_induced_catas</td>
+          <td>0.3621 &plusmn; 0.0113</td>
+          <td>0.0864 &plusmn; 0.0248</td>
+          <td>1064.4 &plusmn; 45.7</td>
+          <td>0.0137 &plusmn; 0.0059</td>
+          <td>never (5/5)</td>
+        </tr>
+        <tr class="row-catas">
+          <td class="label">always_catas</td>
+          <td>0.7083 &plusmn; 0.0117</td>
+          <td>0.0572 &plusmn; 0.0162</td>
+          <td>218.7 &plusmn; 5.6</td>
+          <td>0.0001 &plusmn; 0.0034</td>
+          <td>never (5/5)</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="infeasible-note">always_cross (6th condition, deliberately absent): infeasible at 10 sim-hr &mdash; no MT is ever removed, so density and O(N&sup2;) collision cost diverge. Runs hit 13&ndash;15 GB RAM and 6&ndash;8 CPU-hours without completing the first 1-hour snapshot and were killed. Treated as a qualitative "density runaway" result, not a numeric row.</p>
+
+  <h2>S2 Trajectories — region_lw vs global, per condition</h2>
+  <div class="chart-row">
+    <div class="chart-wrap">
+      <div class="chart-title">s2_region_lw (length-weighted, per-region) &mdash; mean across 5 seeds</div>
+      <svg viewBox="0 0 640 300" preserveAspectRatio="xMidYMid meet">
+        <line class="grid-line" x1="46" y1="272" x2="626" y2="272"/>
+        <line class="grid-line" x1="46" y1="220" x2="626" y2="220"/>
+        <line class="grid-line" x1="46" y1="168" x2="626" y2="168"/>
+        <line class="grid-line" x1="46" y1="116" x2="626" y2="116"/>
+        <line class="grid-line" x1="46" y1="64"  x2="626" y2="64"/>
+        <line class="grid-line" x1="46" y1="12"  x2="626" y2="12"/>
+        <text class="axis-label" x="40" y="275" text-anchor="end">0.0</text>
+        <text class="axis-label" x="40" y="223" text-anchor="end">0.2</text>
+        <text class="axis-label" x="40" y="171" text-anchor="end">0.4</text>
+        <text class="axis-label" x="40" y="119" text-anchor="end">0.6</text>
+        <text class="axis-label" x="40" y="67"  text-anchor="end">0.8</text>
+        <text class="axis-label" x="40" y="15"  text-anchor="end">1.0</text>
+        <text class="axis-label" x="46"  y="288" text-anchor="middle">0h</text>
+        <text class="axis-label" x="162" y="288" text-anchor="middle">2h</text>
+        <text class="axis-label" x="278" y="288" text-anchor="middle">4h</text>
+        <text class="axis-label" x="394" y="288" text-anchor="middle">6h</text>
+        <text class="axis-label" x="510" y="288" text-anchor="middle">8h</text>
+        <text class="axis-label" x="626" y="288" text-anchor="middle">10h</text>
+        <polyline class="series-line" stroke="#2c5aa0" points="51.80,120.39 57.60,111.50 63.40,104.59 69.20,101.60 75.00,96.32 80.80,92.37 86.60,87.84 92.40,85.03 98.20,81.73 104.00,80.20 109.80,76.87 115.60,73.23 121.40,70.71 127.20,68.63 133.00,67.15 138.80,64.62 144.60,64.73 150.40,63.90 156.20,62.36 162.00,61.63 167.80,61.04 173.60,61.27 179.40,60.05 185.20,60.23 191.00,59.89 196.80,58.93 202.60,58.31 208.40,57.63 214.20,58.12 220.00,57.84 225.80,56.85 231.60,57.63 237.40,57.99 243.20,56.95 249.00,59.16 254.80,57.84 260.60,57.53 266.40,57.03 272.20,57.60 278.00,56.46 283.80,54.41 289.60,56.04 295.40,55.13 301.20,54.35 307.00,53.57 312.80,54.07 318.60,54.02 324.40,53.99 330.20,54.28 336.00,53.52 341.80,52.51 347.60,53.29 353.40,53.37 359.20,54.02 365.00,53.18 370.80,52.12 376.60,52.12 382.40,51.91 388.20,52.01 394.00,51.42 399.80,51.73 405.60,52.77 411.40,52.35 417.20,52.14 423.00,52.72 428.80,52.27 434.60,52.48 440.40,52.33 446.20,53.39 452.00,53.47 457.80,52.90 463.60,52.53 469.40,52.25 475.20,51.39 481.00,50.35 486.80,49.80 492.60,49.91 498.40,50.48 504.20,50.30 510.00,49.83 515.80,50.97 521.60,50.66 527.40,50.84 533.20,50.27 539.00,49.83 544.80,50.04 550.60,49.47 556.40,49.70 562.20,49.31 568.00,49.65 573.80,49.47 579.60,49.28 585.40,48.87 591.20,48.56 597.00,48.89 602.80,48.87 608.60,50.27 614.40,49.36 620.20,49.57 626.00,50.01"/>
+        <polyline class="series-line" stroke="#e67e22" points="51.80,128.30 57.60,127.18 63.40,127.52 69.20,125.44 75.00,123.28 80.80,125.59 86.60,123.05 92.40,123.57 98.20,127.10 104.00,125.13 109.80,125.62 115.60,125.65 121.40,125.23 127.20,127.02 133.00,125.54 138.80,127.08 144.60,127.26 150.40,126.19 156.20,126.35 162.00,125.31 167.80,127.70 173.60,125.67 179.40,125.00 185.20,125.83 191.00,126.06 196.80,128.09 202.60,126.43 208.40,124.19 214.20,127.65 220.00,127.99 225.80,126.97 231.60,124.87 237.40,124.66 243.20,123.38 249.00,127.23 254.80,127.34 260.60,124.14 266.40,125.36 272.20,126.92 278.00,125.33 283.80,125.93 289.60,124.58 295.40,127.41 301.20,126.76 307.00,125.67 312.80,124.01 318.60,125.00 324.40,126.24 330.20,122.86 336.00,126.19 341.80,124.58 347.60,122.50 353.40,122.34 359.20,125.18 365.00,126.74 370.80,123.49 376.60,124.87 382.40,129.36 388.20,125.88 394.00,128.09 399.80,124.35 405.60,125.70 411.40,126.61 417.20,123.28 423.00,126.01 428.80,123.59 434.60,123.18 440.40,123.23 446.20,126.37 452.00,126.69 457.80,124.94 463.60,124.01 469.40,126.89 475.20,125.65 481.00,126.45 486.80,123.90 492.60,122.19 498.40,125.00 504.20,125.57 510.00,123.18 515.80,127.41 521.60,127.26 527.40,123.15 533.20,126.04 539.00,124.84 544.80,122.45 550.60,127.57 556.40,125.91 562.20,125.96 568.00,127.70 573.80,124.24 579.60,124.97 585.40,124.35 591.20,125.65 597.00,124.53 602.80,123.59 608.60,126.09 614.40,127.75 620.20,125.67 626.00,124.24"/>
+        <polyline class="series-line" stroke="#2a9d3f" points="51.80,123.02 57.60,114.28 63.40,105.52 69.20,97.96 75.00,91.07 80.80,84.41 86.60,80.20 92.40,76.04 98.20,74.45 104.00,70.32 109.80,66.21 115.60,62.62 121.40,59.84 127.20,56.30 133.00,54.80 138.80,52.92 144.60,51.99 150.40,50.48 156.20,49.44 162.00,47.07 167.80,45.70 173.60,44.79 179.40,43.82 185.20,43.15 191.00,42.37 196.80,42.03 202.60,41.17 208.40,40.63 214.20,39.92 220.00,39.25 225.80,39.20 231.60,38.65 237.40,38.88 243.20,38.23 249.00,38.42 254.80,37.84 260.60,37.61 266.40,37.71 272.20,36.60 278.00,36.80 283.80,36.23 289.60,35.76 295.40,35.53 301.20,36.05 307.00,36.41 312.80,35.74 318.60,36.02 324.40,35.66 330.20,36.15 336.00,36.52 341.80,36.18 347.60,36.02 353.40,35.79 359.20,35.97 365.00,35.79 370.80,35.53 376.60,35.97 382.40,35.63 388.20,36.28 394.00,35.58 399.80,35.63 405.60,35.04 411.40,35.74 417.20,35.79 423.00,35.22 428.80,35.27 434.60,35.06 440.40,34.93 446.20,34.59 452.00,34.70 457.80,34.80 463.60,34.85 469.40,34.39 475.20,34.54 481.00,34.36 486.80,34.02 492.60,34.85 498.40,34.70 504.20,34.72 510.00,34.62 515.80,34.33 521.60,34.54 527.40,34.26 533.20,34.39 539.00,34.75 544.80,34.83 550.60,34.80 556.40,34.54 562.20,34.67 568.00,34.62 573.80,34.75 579.60,34.93 585.40,34.96 591.20,34.59 597.00,34.33 602.80,34.28 608.60,34.20 614.40,35.09 620.20,34.93 626.00,34.49"/>
+        <polyline class="series-line" stroke="#8e44ad" points="51.80,188.02 57.60,190.80 63.40,191.01 69.20,188.41 75.00,189.53 80.80,188.98 86.60,185.13 92.40,187.92 98.20,186.80 104.00,184.43 109.80,183.96 115.60,184.15 121.40,184.54 127.20,184.38 133.00,184.56 138.80,184.17 144.60,185.50 150.40,183.21 156.20,184.33 162.00,183.94 167.80,182.79 173.60,182.72 179.40,182.17 185.20,183.21 191.00,182.01 196.80,183.13 202.60,183.24 208.40,182.38 214.20,182.27 220.00,181.29 225.80,181.52 231.60,180.87 237.40,181.13 243.20,182.82 249.00,181.88 254.80,181.47 260.60,182.17 266.40,181.49 272.20,181.44 278.00,181.73 283.80,183.29 289.60,182.20 295.40,180.27 301.20,180.12 307.00,178.97 312.80,179.41 318.60,179.02 324.40,178.35 330.20,176.92 336.00,178.35 341.80,177.23 347.60,174.99 353.40,176.68 359.20,177.41 365.00,178.79 370.80,177.33 376.60,178.17 382.40,179.41 388.20,177.91 394.00,179.52 399.80,178.63 405.60,179.91 411.40,180.12 417.20,179.73 423.00,180.25 428.80,179.99 434.60,179.31 440.40,179.13 446.20,180.87 452.00,181.05 457.80,178.58 463.60,179.18 469.40,179.80 475.20,180.45 481.00,181.96 486.80,179.18 492.60,180.35 498.40,179.80 504.20,178.01 510.00,178.69 515.80,177.80 521.60,178.17 527.40,176.79 533.20,178.69 539.00,179.67 544.80,179.73 550.60,179.57 556.40,179.91 562.20,181.34 568.00,181.75 573.80,180.38 579.60,179.26 585.40,179.78 591.20,178.32 597.00,179.23 602.80,177.23 608.60,178.19 614.40,177.70 620.20,178.66 626.00,177.85"/>
+        <polyline class="series-line" stroke="#c0392b" points="51.80,91.12 57.60,89.87 63.40,89.53 69.20,89.82 75.00,91.46 80.80,90.08 86.60,90.13 92.40,88.28 98.20,87.35 104.00,89.84 109.80,87.84 115.60,89.92 121.40,89.79 127.20,89.58 133.00,87.71 138.80,89.25 144.60,88.86 150.40,91.25 156.20,90.42 162.00,91.69 167.80,88.47 173.60,88.13 179.40,87.63 185.20,89.53 191.00,88.39 196.80,90.29 202.60,90.31 208.40,91.72 214.20,89.66 220.00,90.91 225.80,88.60 231.60,91.30 237.40,86.49 243.20,90.29 249.00,88.65 254.80,89.95 260.60,87.92 266.40,87.82 272.20,86.31 278.00,89.64 283.80,88.36 289.60,88.10 295.40,89.12 301.20,89.51 307.00,88.78 312.80,89.43 318.60,89.87 324.40,88.18 330.20,90.75 336.00,88.26 341.80,89.87 347.60,89.01 353.40,88.00 359.20,91.38 365.00,89.38 370.80,86.67 376.60,89.06 382.40,87.43 388.20,90.68 394.00,92.11 399.80,89.53 405.60,90.86 411.40,90.78 417.20,89.30 423.00,88.88 428.80,88.26 434.60,91.56 440.40,89.12 446.20,90.16 452.00,89.56 457.80,87.43 463.60,88.21 469.40,91.01 475.20,87.30 481.00,88.10 486.80,89.35 492.60,89.64 498.40,87.56 504.20,90.29 510.00,87.82 515.80,88.60 521.60,88.83 527.40,89.95 533.20,87.74 539.00,87.69 544.80,89.84 550.60,91.25 556.40,89.84 562.20,88.26 568.00,90.10 573.80,89.97 579.60,88.65 585.40,90.44 591.20,88.13 597.00,88.99 602.80,89.12 608.60,89.77 614.40,90.34 620.20,88.91 626.00,87.84"/>
+      </svg>
+    </div>
+    <div class="chart-wrap">
+      <div class="chart-title">s2_global (regions combined, array-wide) &mdash; mean across 5 seeds</div>
+      <svg viewBox="0 0 640 300" preserveAspectRatio="xMidYMid meet">
+        <line class="grid-line" x1="46" y1="272" x2="626" y2="272"/>
+        <line class="grid-line" x1="46" y1="220" x2="626" y2="220"/>
+        <line class="grid-line" x1="46" y1="168" x2="626" y2="168"/>
+        <line class="grid-line" x1="46" y1="116" x2="626" y2="116"/>
+        <line class="grid-line" x1="46" y1="64"  x2="626" y2="64"/>
+        <line class="grid-line" x1="46" y1="12"  x2="626" y2="12"/>
+        <text class="axis-label" x="40" y="275" text-anchor="end">0.0</text>
+        <text class="axis-label" x="40" y="223" text-anchor="end">0.2</text>
+        <text class="axis-label" x="40" y="171" text-anchor="end">0.4</text>
+        <text class="axis-label" x="40" y="119" text-anchor="end">0.6</text>
+        <text class="axis-label" x="40" y="67"  text-anchor="end">0.8</text>
+        <text class="axis-label" x="40" y="15"  text-anchor="end">1.0</text>
+        <text class="axis-label" x="46"  y="288" text-anchor="middle">0h</text>
+        <text class="axis-label" x="162" y="288" text-anchor="middle">2h</text>
+        <text class="axis-label" x="278" y="288" text-anchor="middle">4h</text>
+        <text class="axis-label" x="394" y="288" text-anchor="middle">6h</text>
+        <text class="axis-label" x="510" y="288" text-anchor="middle">8h</text>
+        <text class="axis-label" x="626" y="288" text-anchor="middle">10h</text>
+        <polyline class="series-line" stroke="#2c5aa0" points="51.80,255.78 57.60,247.35 63.40,244.52 69.20,246.91 75.00,239.29 80.80,237.76 86.60,237.89 92.40,235.29 98.20,231.52 104.00,230.04 109.80,232.84 115.60,227.98 121.40,223.77 127.20,219.95 133.00,218.34 138.80,218.70 144.60,220.91 150.40,217.76 156.20,216.78 162.00,212.23 167.80,207.81 173.60,207.57 179.40,207.05 185.20,207.96 191.00,200.42 196.80,200.71 202.60,200.27 208.40,203.23 214.20,201.59 220.00,199.85 225.80,199.15 231.60,200.01 237.40,203.05 243.20,204.63 249.00,205.36 254.80,205.57 260.60,199.28 266.40,199.15 272.20,200.94 278.00,201.62 283.80,202.09 289.60,200.97 295.40,201.72 301.20,203.67 307.00,203.13 312.80,202.35 318.60,204.63 324.40,203.80 330.20,203.59 336.00,200.76 341.80,196.68 347.60,192.73 353.40,192.67 359.20,193.97 365.00,195.17 370.80,191.04 376.60,192.21 382.40,190.80 388.20,193.19 394.00,190.31 399.80,192.05 405.60,190.98 411.40,186.90 417.20,181.57 423.00,178.74 428.80,175.64 434.60,179.49 440.40,174.45 446.20,175.36 452.00,178.76 457.80,178.56 463.60,180.82 469.40,184.02 475.20,180.87 481.00,178.17 486.80,177.67 492.60,177.26 498.40,175.28 504.20,180.40 510.00,181.62 515.80,184.38 521.60,182.07 527.40,182.56 533.20,177.80 539.00,176.03 544.80,175.90 550.60,177.49 556.40,175.88 562.20,174.29 568.00,175.18 573.80,175.23 579.60,175.31 585.40,178.97 591.20,176.48 597.00,174.50 602.80,173.59 608.60,178.56 614.40,178.14 620.20,177.80 626.00,178.24"/>
+        <polyline class="series-line" stroke="#e67e22" points="51.80,259.13 57.60,255.70 63.40,258.53 69.20,260.01 75.00,251.12 80.80,255.07 86.60,244.93 92.40,253.88 98.20,253.10 104.00,255.83 109.80,261.57 115.60,262.69 121.40,261.83 127.20,262.02 133.00,259.34 138.80,262.35 144.60,256.56 150.40,259.31 156.20,256.17 162.00,255.05 167.80,253.20 173.60,253.90 179.40,253.88 185.20,253.72 191.00,259.08 196.80,260.01 202.60,256.89 208.40,260.09 214.20,250.32 220.00,251.07 225.80,255.57 231.60,255.05 237.40,255.70 243.20,257.15 249.00,257.91 254.80,261.16 260.60,258.06 266.40,259.39 272.20,258.87 278.00,258.64 283.80,255.18 289.60,263.37 295.40,260.74 301.20,262.28 307.00,258.69 312.80,258.82 318.60,257.28 324.40,258.92 330.20,258.69 336.00,254.63 341.80,254.71 347.60,256.87 353.40,255.23 359.20,254.87 365.00,253.18 370.80,254.81 376.60,257.18 382.40,251.02 388.20,251.23 394.00,257.54 399.80,253.75 405.60,261.65 411.40,263.11 417.20,262.77 423.00,262.38 428.80,257.52 434.60,255.36 440.40,259.68 446.20,258.01 452.00,258.56 457.80,259.05 463.60,258.01 469.40,260.07 475.20,259.55 481.00,258.04 486.80,255.85 492.60,251.56 498.40,252.86 504.20,260.20 510.00,259.31 515.80,256.24 521.60,261.86 527.40,259.10 533.20,262.07 539.00,258.19 544.80,254.09 550.60,257.00 556.40,253.41 562.20,257.88 568.00,259.34 573.80,255.67 579.60,258.58 585.40,259.13 591.20,257.47 597.00,257.02 602.80,260.12 608.60,258.32 614.40,253.83 620.20,255.96 626.00,253.23"/>
+        <polyline class="series-line" stroke="#2a9d3f" points="51.80,262.74 57.60,251.30 63.40,242.91 69.20,230.09 75.00,215.92 80.80,202.92 86.60,189.14 92.40,174.42 98.20,165.87 104.00,156.25 109.80,145.56 115.60,136.77 121.40,125.59 127.20,117.22 133.00,109.29 138.80,102.71 144.60,98.71 150.40,93.80 156.20,91.79 162.00,86.00 167.80,84.12 173.60,79.29 179.40,76.82 185.20,73.36 191.00,71.18 196.80,69.23 202.60,66.73 208.40,64.73 214.20,62.60 220.00,60.96 225.80,58.62 231.60,55.99 237.40,55.06 243.20,53.70 249.00,53.34 254.80,53.89 260.60,53.31 266.40,51.39 272.20,50.01 278.00,49.23 283.80,48.37 289.60,47.44 295.40,46.45 301.20,47.70 307.00,47.44 312.80,47.00 318.60,47.31 324.40,46.42 330.20,46.06 336.00,45.96 341.80,44.53 347.60,44.19 353.40,43.85 359.20,43.72 365.00,43.90 370.80,43.36 376.60,44.21 382.40,43.72 388.20,44.03 394.00,42.81 399.80,43.10 405.60,42.08 411.40,42.97 417.20,43.17 423.00,42.68 428.80,42.11 434.60,41.64 440.40,41.46 446.20,40.65 452.00,40.29 457.80,40.05 463.60,40.42 469.40,39.74 475.20,39.87 481.00,39.87 486.80,39.61 492.60,39.77 498.40,40.42 504.20,40.21 510.00,40.08 515.80,39.77 521.60,40.08 527.40,39.79 533.20,39.59 539.00,40.16 544.80,40.21 550.60,40.68 556.40,40.39 562.20,40.37 568.00,40.44 573.80,40.52 579.60,40.39 585.40,40.34 591.20,40.34 597.00,39.92 602.80,40.00 608.60,39.27 614.40,40.68 620.20,39.98 626.00,40.00"/>
+        <polyline class="series-line" stroke="#8e44ad" points="51.80,265.11 57.60,265.84 63.40,266.96 69.20,265.76 75.00,266.88 80.80,264.67 86.60,261.24 92.40,261.00 98.20,260.43 104.00,262.28 109.80,260.01 115.60,262.51 121.40,262.17 127.20,259.96 133.00,262.74 138.80,262.95 144.60,260.92 150.40,260.14 156.20,260.72 162.00,255.67 167.80,257.13 173.60,257.21 179.40,257.80 185.20,257.41 191.00,256.48 196.80,259.78 202.60,256.58 208.40,256.82 214.20,257.96 220.00,256.76 225.80,257.39 231.60,256.74 237.40,257.41 243.20,255.49 249.00,256.45 254.80,255.18 260.60,254.19 266.40,257.23 272.20,256.09 278.00,255.98 283.80,255.91 289.60,256.09 295.40,254.74 301.20,251.38 307.00,252.76 312.80,253.07 318.60,251.75 324.40,249.28 330.20,251.95 336.00,253.02 341.80,248.86 347.60,245.66 353.40,249.41 359.20,248.11 365.00,247.64 370.80,249.09 376.60,249.77 382.40,248.57 388.20,250.97 394.00,253.05 399.80,253.49 405.60,251.67 411.40,252.32 417.20,250.81 423.00,249.09 428.80,250.71 434.60,249.93 440.40,251.02 446.20,253.05 452.00,255.80 457.80,254.84 463.60,253.31 469.40,253.57 475.20,255.23 481.00,256.71 486.80,255.80 492.60,254.37 498.40,253.88 504.20,251.75 510.00,254.84 515.80,252.45 521.60,252.08 527.40,253.72 533.20,253.05 539.00,251.20 544.80,255.23 550.60,251.93 556.40,254.24 562.20,258.35 568.00,257.52 573.80,257.28 579.60,253.25 585.40,253.64 591.20,253.83 597.00,251.28 602.80,251.72 608.60,250.76 614.40,250.73 620.20,251.38 626.00,249.54"/>
+        <polyline class="series-line" stroke="#c0392b" points="51.80,258.84 57.60,253.98 63.40,251.36 69.20,249.17 75.00,256.71 80.80,260.17 86.60,255.88 92.40,251.04 98.20,254.06 104.00,253.54 109.80,252.66 115.60,248.57 121.40,261.65 127.20,260.14 133.00,260.48 138.80,259.60 144.60,255.78 150.40,262.17 156.20,257.44 162.00,260.33 167.80,255.72 173.60,254.66 179.40,254.87 185.20,257.08 191.00,255.33 196.80,254.84 202.60,253.02 208.40,255.49 214.20,260.40 220.00,261.47 225.80,245.45 231.60,249.15 237.40,254.06 243.20,258.45 249.00,262.74 254.80,256.53 260.60,248.89 266.40,249.46 272.20,255.39 278.00,255.02 283.80,254.81 289.60,251.15 295.40,245.77 301.20,252.86 307.00,257.41 312.80,261.50 318.60,262.80 324.40,260.17 330.20,256.04 336.00,253.88 341.80,256.97 347.60,255.15 353.40,259.23 359.20,258.77 365.00,257.88 370.80,255.67 376.60,256.61 382.40,257.99 388.20,256.37 394.00,260.25 399.80,260.72 405.60,255.20 411.40,261.05 417.20,256.09 423.00,249.25 428.80,258.40 434.60,257.62 440.40,257.91 446.20,258.09 452.00,255.54 457.80,250.86 463.60,255.23 469.40,260.66 475.20,257.88 481.00,253.33 486.80,251.72 492.60,256.22 498.40,251.12 504.20,250.91 510.00,256.45 515.80,258.48 521.60,251.25 527.40,252.79 533.20,255.96 539.00,255.88 544.80,255.39 550.60,257.93 556.40,254.03 562.20,257.18 568.00,256.09 573.80,255.57 579.60,253.33 585.40,255.33 591.20,258.53 597.00,261.08 602.80,256.89 608.60,255.36 614.40,247.92 620.20,254.87 626.00,257.13"/>
+      </svg>
+    </div>
+  </div>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-line" style="background:#2c5aa0"></span> baseline</span>
+    <span class="legend-item"><span class="legend-line" style="background:#e67e22"></span> no_zipper</span>
+    <span class="legend-item"><span class="legend-line" style="background:#2a9d3f"></span> zipper_to_cross</span>
+    <span class="legend-item"><span class="legend-line" style="background:#8e44ad"></span> no_induced_catas</span>
+    <span class="legend-item"><span class="legend-line" style="background:#c0392b"></span> always_catas</span>
+  </div>
+
+  <h2>Key Findings</h2>
+  <div class="findings">
+    <div class="finding confirmed">
+      <div class="finding-label">Confirmed &mdash; survival, not alignment, drives global order</div>
+      <p><code>no_zipper</code> (removes zippering AND kills ~50% of shallow collisions) ends disordered and sparse: s2_lw <span class="num">0.568</span>, s2_global <span class="num">0.072</span>, density <span class="num">364</span>. <code>zipper_to_cross</code> (removes only the explicit alignment step; shallow collisions cross over and the MT survives) ends ordered and dense: s2_lw <span class="num">0.914</span>, s2_global <span class="num">0.892</span>, density <span class="num">1842</span> &mdash; denser than baseline. Since these two conditions differ only in whether colliding MTs survive, the surviving-MT population plus steep-collision induced catastrophe is what builds global order, not zippering's explicit angular-correction step. This reproduces the founding CorticalSim (Tindemans/Deinum/Mulder) result by ablation, not as a new discovery.</p>
+    </div>
+    <div class="finding confirmed">
+      <div class="finding-label">Verified &mdash; zipper_to_cross's high s2_global is real, not an artifact</div>
+      <p>Before trusting that removing alignment can raise global order above baseline, the trajectory was inspected directly. <code>zipper_to_cross</code> s2_global rises smoothly in all 5 seeds (mean 0.45 at 1h &rarr; 0.72 at 2h &rarr; 0.81 at 3h &rarr; plateau 0.87&ndash;0.89 by 5h), a classic saturating growth curve, and the seed-to-seed spread <em>shrinks</em> monotonically from std <span class="num">0.092</span> at 1h to <span class="num">0.005</span> at 10h &mdash; independent seeds converging on the same equilibrium. Largest single-step jump is <span class="num">~10%</span> of the total rise, no larger (in fact proportionally smaller) than baseline's own step-to-step noise. Verdict: <strong>real effect</strong>.</p>
+    </div>
+    <div class="finding suggestive">
+      <div class="finding-label">s2_region_lw runs inflated &mdash; trust s2_global</div>
+      <p>Ranking the lw&minus;global gap across all 5 conditions settles which metric to trust: <code>always_catas</code> gap <span class="num">0.65</span> (lw <span class="num">0.708</span>, global <span class="num">0.057</span>), <code>no_zipper</code> gap <span class="num">0.50</span>, <code>baseline</code> gap <span class="num">0.49</span>, <code>no_induced_catas</code> gap <span class="num">0.28</span>, <code>zipper_to_cross</code> gap <span class="num">0.02</span>. always_catas is decisive: an array that is 6% ordered array-wide cannot really be 71% locally ordered by any physical mechanism, so the lw estimator is inflated there, not detecting real local domains &mdash; and by extension likely inflated in baseline and no_induced_catas too, which show the same pattern at smaller magnitude. <code>zipper_to_cross</code>'s near-zero gap is the one case where the two metrics agree, i.e. its order really is array-wide.</p>
+    </div>
+    <div class="finding anomaly">
+      <div class="finding-label">Unscoped observation &mdash; no_induced_catas is the most disordered condition tested</div>
+      <p>Not part of the original decomposition, but notable: <code>no_induced_catas</code> (steep-collision catastrophe removed, zippering intact) ends at s2_lw <span class="num">0.362</span> &mdash; lower than even <code>no_zipper</code>'s 0.568, despite retaining the alignment step. Removing steep-collision catastrophe alone appears to hurt order more than removing zippering alone. Flagging for follow-up rather than folding into the headline claim, since it wasn't part of the requested decomposition and needs its own dedicated check.</p>
+    </div>
+  </div>
+
+  <h2>What This Means</h2>
+  <div class="interpretation">
+    <p>The no_zipper / zipper_to_cross pair is a clean natural experiment: both remove the explicit "rotate this MT to align with what it hit" rule, and they differ in exactly one thing &mdash; what happens to an MT after a shallow-angle collision. no_zipper kills it (roughly half the time); zipper_to_cross lets it cross over and continue. That single difference is enough to flip the outcome from disordered+sparse to ordered+dense, matching baseline's density and exceeding baseline's global order.</p>
+    <p>That means the alignment step itself is not doing the causal work of building array-wide nematic order. What's doing the work is which MTs get to keep existing. Surviving MTs accumulate, collide more, and steep-angle collisions still trigger catastrophe &mdash; pruning the population toward whichever orientation is locally dominant. Zippering's explicit rotation looks, by this ablation, more like a local nudge on top of a process whose real engine is differential survival.</p>
+    <p>This is a reproduction of an already-published result (Tindemans/Deinum/Mulder's CorticalSim finding that collision-induced catastrophe, not explicit zippering, is the primary alignment mechanism), arrived at here independently via a 5-condition ablation rather than by citing it directly. Worth keeping in mind before treating the zipper_to_cross-above-baseline global-order number as surprising: it's consistent with that prior result, not a departure from it.</p>
+  </div>
+
+  <footer>
+    <p>Data: <code>elastic-mt-refactor/s1_results/&lt;condition&gt;_seed&lt;1-5&gt;/result.json</code> &middot; 25 runs, 100 snapshots each, 0&ndash;10 sim-hr</p>
+    <p>Metrics computed by <code>s1_analyze.py</code> &middot; full per-run matrix in <code>s1_results/ablation_matrix.tsv</code></p>
+    <p>always_cross omitted: infeasible, density runaway before first snapshot &middot; report generated 2026-07-05</p>
+  </footer>
+
+</div>
+</body>
+</html>
