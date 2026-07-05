@@ -1,0 +1,29 @@
+{
+  "selected": {
+    "nf": 8,
+    "sc": 0.0005,
+    "recon": 5.6722743465797976e-05,
+    "dead": 5,
+    "active_frac": 0.3115833333333333
+  },
+  "best_feature": 3,
+  "best_feature_test_corr": 0.682,
+  "seed4": 0.986,
+  "seed5": 0.241,
+  "dense_probe_test_r2": 0.963,
+  "top3": [
+    [
+      3,
+      0.745
+    ],
+    [
+      0,
+      0.473
+    ],
+    [
+      2,
+      -0.046
+    ]
+  ],
+  "verdict": "dense-only (kill)"
+}

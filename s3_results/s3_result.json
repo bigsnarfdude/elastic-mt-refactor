@@ -1,0 +1,43 @@
+{
+  "train_shape": [
+    1500,
+    36
+  ],
+  "test_shape": [
+    1000,
+    36
+  ],
+  "n_dead": 23,
+  "n_features": 32,
+  "best_feature": 8,
+  "best_feature_pref_angle_deg": 62.5,
+  "best_feature_test_corr": 0.659771967596649,
+  "best_feature_test_r2": 0.4331501907622014,
+  "best_feature_corr_seed4": 0.9781857592517327,
+  "best_feature_corr_seed5": -0.030433045570053507,
+  "dense_probe_test_r2": 0.9717517838002864,
+  "raw_input_probe_test_r2": 0.9513119977487676,
+  "top5_features_by_abscorr": [
+    [
+      8,
+      0.759
+    ],
+    [
+      12,
+      0.691
+    ],
+    [
+      24,
+      0.52
+    ],
+    [
+      4,
+      0.468
+    ],
+    [
+      1,
+      0.322
+    ]
+  ],
+  "verdict": "KILL/trivial"
+}

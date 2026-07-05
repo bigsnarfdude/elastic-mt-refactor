@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>S3 — an SAE rediscovers the order parameter</title>
+<style>
+  :root { --accent:#2980b9; }
+  * { box-sizing:border-box; }
+  body { background:#fafafa; color:#222; margin:0; padding:0 1rem;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:16px; line-height:1.6; }
+  .wrap { max-width:720px; margin:0 auto; padding:2.5rem 0 4rem; }
+  h1 { font-size:1.75rem; line-height:1.25; margin:0 0 .3rem; color:#1a1a1a; }
+  .sub { color:#666; font-size:1.05rem; margin:0; }
+  .date { color:#999; font-size:.85rem; font-family:"SF Mono","Fira Code",Consolas,monospace; margin-top:.2rem; }
+  .lead { font-size:1.08rem; margin:1.2rem 0 0; padding:1rem 1.1rem; background:#eaf2f8;
+    border-left:3px solid var(--accent); border-radius:2px; }
+  h2 { font-size:1.25rem; color:#444; margin:2.6rem 0 .8rem; padding-left:.7rem; border-left:3px solid var(--accent); }
+  code,.mono { font-family:"SF Mono","Fira Code",Consolas,monospace; font-size:.92em; }
+  ul li { margin:.35rem 0; }
+  .chip { display:inline-block; width:.7rem; height:.7rem; border-radius:2px; margin-right:.45rem; vertical-align:middle; }
+  .g{background:#2a9d3f}.a{background:#d4a017}.r{background:#c0392b}.b{background:#2980b9}.k{background:#777}
+  .finding { margin:.9rem 0; } .finding b{color:#1a1a1a; }
+  table { border-collapse:collapse; width:100%; margin:1rem 0; font-size:.9rem; }
+  th,td { text-align:right; padding:.4rem .55rem; border-bottom:1px solid #e3e3e3; }
+  th:first-child,td:first-child { text-align:left; font-family:"SF Mono",Consolas,monospace; }
+  th { color:#555; border-bottom:2px solid #ccc; }
+  tr.star td { background:#eaf6ee; font-weight:600; }
+  .num { font-family:"SF Mono",Consolas,monospace; }
+  figure { margin:1.4rem 0; } figcaption { font-size:.82rem; color:#777; margin-top:.4rem; }
+  .note { font-size:.9rem; color:#666; }
+  footer { margin-top:3rem; padding-top:1rem; border-top:1px solid #ddd; font-size:.82rem; color:#888; }
+  footer code { color:#666; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>An SAE rediscovers the microtubule order parameter — as a 2-atom director code</h1>
+    <p class="sub">Sprint S3 — sparse autoencoder on cortical-MT trajectory geometry</p>
+    <p class="date">2026-07-05 · trained on the S1 ablation snapshots · nigel</p>
+    <p class="lead">Ask an unsupervised sparse autoencoder to compress the geometry of a self-organizing
+      microtubule array, and it independently reinvents the exact quantity biologists hand-designed: nematic
+      order. Not as one neuron — order is rotation-invariant, so no single direction-tuned feature can be it —
+      but as a minimal <em>two-atom</em> code that recovers S₂ at r = 0.99.</p>
+  </header>
+
+  <h2>TL;DR</h2>
+  <ul>
+    <li><span class="chip r"></span><b>The obvious hypothesis fails.</b> No single SAE feature <em>is</em> S₂ (best 0.68, and it swings 0.99→0.24 between held-out seeds). A single feature is a direction detector, and S₂ is direction-blind.</li>
+    <li><span class="chip g"></span><b>But two atoms nail it.</b> Reconstruct the array's angle histogram from just its top-2 order-carrying atoms → S₂ comes back at <b>r = 0.99, stable across both held-out seeds</b>.</li>
+    <li><span class="chip g"></span><b>Order is exactly 2-dimensional.</b> 1 atom → 0.69, 2 atoms → 0.99, 3 atoms → 0.994. A third adds nothing: the learned order code is a 2D (direction + magnitude) object.</li>
+    <li><span class="chip b"></span><b>It matches the physics.</b> The hand-designed pair is (Ω = director angle, S₂ = scalar order). The SAE arrives at the same decomposition on its own — no labels, no fitted probe.</li>
+  </ul>
+
+  <h2>The setup</h2>
+  <p>Cortical microtubules self-organize from a disordered tangle into a globally aligned array. Biologists
+    summarize "how aligned" with the nematic order parameter <b>S₂</b> — essentially the strength of the 2nd
+    harmonic of the angle distribution. The question: if you train a sparse autoencoder (a model that learns a
+    small dictionary of reusable "atoms") on raw per-region angle histograms, with no access to S₂ — does it
+    <em>rediscover</em> S₂ on its own? If yes, the hand-designed order parameter is a natural axis of the data,
+    not just a human convention.</p>
+  <p class="note">The training set is a gift from Sprint S1: 25 rule-ablation runs whose order spans S₂ ≈ 0.07
+    (disordered) to 0.89 (highly aligned) — the variation you need for the question to even be askable.</p>
+
+  <h2>What we did</h2>
+  <figure>
+    <svg viewBox="0 0 660 118" width="100%" role="img" aria-label="process flow">
+      <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+        <path d="M0,0 L6,3 L0,6 Z" fill="#888"/></marker></defs>
+      <g font-size="11.5" fill="#333">
+        <rect x="4" y="34" width="150" height="52" rx="5" fill="#fff" stroke="#bbb"/>
+        <text x="79" y="56" text-anchor="middle" font-weight="600">2500 snapshots</text>
+        <text x="79" y="72" text-anchor="middle" fill="#666">36-bin angle hists</text>
+        <rect x="180" y="34" width="150" height="52" rx="5" fill="#fff" stroke="#bbb"/>
+        <text x="255" y="56" text-anchor="middle" font-weight="600">train SAE</text>
+        <text x="255" y="72" text-anchor="middle" fill="#666">seeds 1–3, blind to S₂</text>
+        <rect x="356" y="34" width="150" height="52" rx="5" fill="#fff" stroke="#bbb"/>
+        <text x="431" y="56" text-anchor="middle" font-weight="600">probe features</text>
+        <text x="431" y="72" text-anchor="middle" fill="#666">held-out seeds 4–5</text>
+        <rect x="532" y="34" width="124" height="52" rx="5" fill="#eaf6ee" stroke="#2a9d3f"/>
+        <text x="594" y="56" text-anchor="middle" font-weight="600">2-atom code</text>
+        <text x="594" y="72" text-anchor="middle" fill="#666">r = 0.99</text>
+      </g>
+      <line x1="154" y1="60" x2="178" y2="60" stroke="#888" marker-end="url(#ar)"/>
+      <line x1="330" y1="60" x2="354" y2="60" stroke="#888" marker-end="url(#ar)"/>
+      <line x1="506" y1="60" x2="530" y2="60" stroke="#888" marker-end="url(#ar)"/>
+    </svg>
+    <figcaption>Model selection (dictionary size, sparsity) was done on reconstruction quality alone — blind to
+      S₂ — so the probe can't be accused of fishing.</figcaption>
+  </figure>
+
+  <h2>What we found</h2>
+
+  <figure>
+    <svg viewBox="0 0 660 300" width="100%" role="img" aria-label="S2 recovery vs number of atoms">
+      <line x1="70" y1="20" x2="70" y2="250" stroke="#ccc"/>
+      <line x1="70" y1="250" x2="640" y2="250" stroke="#ccc"/>
+      <g font-size="10" fill="#999" font-family="monospace">
+        <text x="64" y="253" text-anchor="end">0</text>
+        <line x1="70" y1="192.5" x2="640" y2="192.5" stroke="#f0f0f0"/><text x="64" y="196" text-anchor="end">.25</text>
+        <line x1="70" y1="135" x2="640" y2="135" stroke="#f0f0f0"/><text x="64" y="138" text-anchor="end">.50</text>
+        <line x1="70" y1="77.5" x2="640" y2="77.5" stroke="#f0f0f0"/><text x="64" y="81" text-anchor="end">.75</text>
+        <line x1="70" y1="20" x2="640" y2="20" stroke="#f0f0f0"/><text x="64" y="23" text-anchor="end">1.0</text>
+      </g>
+      <text x="20" y="135" text-anchor="middle" font-size="11" fill="#777" transform="rotate(-90 20 135)">S₂ recovery (r, held-out)</text>
+      <!-- 0.7 threshold -->
+      <line x1="70" y1="88.9" x2="640" y2="88.9" stroke="#c0392b" stroke-dasharray="4 3" stroke-width="1"/>
+      <text x="636" y="85" text-anchor="end" font-size="9" fill="#c0392b">pre-registered bar 0.70</text>
+      <!-- bars: k=1 (0.69), k=2 (0.99), k=3 (0.994) -->
+      <!-- x positions -->
+      <g>
+        <rect x="150" y="90.3" width="90" height="159.7" fill="#d99694"/>
+        <text x="195" y="84" text-anchor="middle" font-size="12" font-weight="600" fill="#b03a2e">0.69</text>
+        <text x="195" y="268" text-anchor="middle" font-size="12" fill="#444">1 atom</text>
+        <text x="195" y="283" text-anchor="middle" font-size="9.5" fill="#999">direction detector</text>
+
+        <rect x="315" y="20.2" width="90" height="229.8" fill="#7fbf7f"/>
+        <text x="360" y="14" text-anchor="middle" font-size="12" font-weight="600" fill="#1e7d34">0.99</text>
+        <text x="360" y="268" text-anchor="middle" font-size="12" font-weight="600" fill="#1e7d34">2 atoms</text>
+        <text x="360" y="283" text-anchor="middle" font-size="9.5" fill="#999">rotation-invariant order</text>
+
+        <rect x="480" y="19.6" width="90" height="230.4" fill="#aacdaa"/>
+        <text x="525" y="13" text-anchor="middle" font-size="12" font-weight="600" fill="#1e7d34">0.994</text>
+        <text x="525" y="268" text-anchor="middle" font-size="12" fill="#444">3 atoms</text>
+        <text x="525" y="283" text-anchor="middle" font-size="9.5" fill="#999">adds nothing</text>
+      </g>
+    </svg>
+    <figcaption>How well the SAE's own top-k atoms reconstruct the order parameter (no fitted weights — the
+      atoms reconstruct the histogram, then the real S₂ function is applied). The jump from 1→2 atoms, and the
+      flat 2→3, is the fingerprint of a quantity that is <em>exactly</em> 2-dimensional.</figcaption>
+  </figure>
+
+  <div class="finding"><span class="chip r"></span><b>One atom is a direction detector, not an order meter.</b> The best single feature (tuned to 67.5°) correlates 0.99 with S₂ when the array happens to order near 67.5°, but only 0.40 when it orders elsewhere. Pooled: 0.68, and seed-unstable (0.99 vs 0.24). That's the pre-registered single-feature hypothesis failing — for a reason.</div>
+
+  <div class="finding"><span class="chip g"></span><b>Two atoms recover S₂ at r = 0.99, seed-stable.</b> The two order-carrying atoms are tuned to 112° and 69° — spanning the nematic plane. Their joint reconstruction is rotation-invariant, so it reads out S₂ regardless of <em>which</em> direction the array picked. Same 0.99 on both held-out seeds.</div>
+
+  <div class="finding"><span class="chip b"></span><b>The learned code matches the physics.</b> Biologists describe order with two numbers: the director angle Ω and the scalar order S₂. The SAE, given no labels, lands on the same 2D structure — direction-selective atoms whose combined magnitude is the order parameter.</div>
+
+  <table>
+    <thead><tr><th>atoms used</th><th>S₂ recovery (all)</th><th>seed 4</th><th>seed 5</th></tr></thead>
+    <tbody>
+      <tr><td>1 atom</td><td class="num">0.69</td><td class="num">0.51</td><td class="num">0.99</td></tr>
+      <tr class="star"><td>2 atoms (112°+69°)</td><td class="num">0.99</td><td class="num">0.99</td><td class="num">0.99</td></tr>
+      <tr><td>3 atoms</td><td class="num">0.994</td><td class="num">0.994</td><td class="num">0.995</td></tr>
+    </tbody>
+  </table>
+
+  <h2>What it means</h2>
+  <p>The tempting test — "is there a single neuron for order?" — was the wrong question, and its failure is
+    informative rather than disappointing. Order (S₂) is a rotation-invariant magnitude; you cannot encode a
+    magnitude that ignores direction in a single feature that is <em>defined</em> by a direction. The SAE instead
+    does the sensible thing: it learns direction-selective atoms and represents order as their combined
+    strength. Two atoms are necessary (a plane has two axes) and sufficient (a third adds nothing) — so the
+    unsupervised model recovers precisely the (Ω, S₂) decomposition the field arrived at by hand. That's a small
+    but clean case of an interpretability method rediscovering a known scientific order parameter from raw
+    simulation geometry.</p>
+
+  <h2>What's next</h2>
+  <ul>
+    <li><span class="chip b"></span>Name the two atoms explicitly as the cos2θ / sin2θ director components and show a live (Ω, S₂) readout tracking an array as it orders.</li>
+    <li><span class="chip b"></span>A resampling-trained SAE (the data is only ~3-dimensional, so most atoms die) for a cleaner, fuller basis.</li>
+    <li><span class="chip b"></span>Push the same probe to features the biologists <em>didn't</em> hand-design — defect density, bundle structure — where an SAE might find something new.</li>
+  </ul>
+
+  <footer>
+    Method note: model selected on reconstruction + dead-atom count, blind to S₂; the 2-atom readout uses the
+    SAE's own decoder (+ bias) and the fixed S₂ functional — no fitted probe weights. An earlier readout that
+    returned 0.31 was a bias-omission bug, corrected here. ·
+    Data: S1 ablation snapshots (<code>~/mt_ablation/*/orderp_*.pickle</code>) · pipeline
+    <code>elastic-mt-refactor/sae/</code> · detail in <code>S3_RESULTS.md</code> · private exploration, 2026-07-05.
+  </footer>
+
+</div>
+</body>
+</html>

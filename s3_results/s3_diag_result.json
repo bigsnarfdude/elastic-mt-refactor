@@ -1,0 +1,9 @@
+{
+  "best_feature": 3,
+  "pref_angle_deg": 67.5,
+  "feat_vs_s2_near": 0.987,
+  "feat_vs_s2_far": 0.405,
+  "rotinv_test_r": 0.309,
+  "rotinv_seed4": 0.292,
+  "rotinv_seed5": 0.323
+}
