@@ -26,6 +26,29 @@ is the signature of a rotation-invariant magnitude that needs — and only needs
 Because this uses the SAE's own reconstruction and the fixed physics S₂ functional, it is an *interpretable*
 low-rank readout, not an arbitrary dense probe.
 
+## Two is the provable ceiling — and capacity only dilutes it
+"2 atoms suffice" is not where the sweep got tired; it is the exact dimensionality of the target. S₂ is the
+magnitude of the **2nd Fourier harmonic**, `S₂ = |Σ h·e^{i2θ}|`, and `e^{i2θ} = cos2θ + i·sin2θ` has exactly
+two real components — so S₂'s per-snapshot variation lives in a **2-dimensional subspace, full stop**. One
+atom is a *line* in that plane (a direction-conditional readout → the near/far split below); two non-parallel
+atoms *span* it (all of S₂); a third is redundant by construction (its 2nd-harmonic content must lie in the
+same 2D plane). No dictionary, however large, can beat this.
+
+Capacity sweep (n_features 8→32→64, S₂-recovery ceiling on held-out):
+
+| SAE size | live atoms | 2nd-harmonic energy in top-2 atoms | S₂ ceiling |
+|---|---|---|---|
+| **8** | 3 | **83%** | 0.994 |
+| 32 | 16 | 31% | 0.994 |
+| 64 | 40 | 14% | ~0.99 (needs ≫6 atoms to reassemble) |
+
+The ceiling never rises — it is pinned at ~0.99 by the 2D physics — but larger dictionaries **fragment the
+same 2D signal across more atoms** (83% → 31% → 14% concentrated in the top two), so you must gather ever more
+of them just to reassemble what a clean 2-atom basis gives directly. **The smallest SAE is the best one:**
+nf=8, concentrating 83% of the order signal into 2 atoms, is the most parsimonious and interpretable code.
+For a low-dimensional target, more sparse capacity *smears* the feature you care about rather than sharpening
+it — the opposite of "more is better." (Sweep: `s3_capacity.py`.)
+
 ## The decisive evidence (held-out seeds 4–5)
 Best feature = feature 3, preferred angle **67.5°**. Splitting held-out snapshots by how far the array's
 director Ω is from that angle:
@@ -67,11 +90,17 @@ the wrong question; the near/far split is the right answer.
   dictionary before reading the result (`Don't cite results from broken scripts`).
 
 ## Caveats / what would make it airtight
-- Even the selected dictionary had 5/8 dead atoms (the data is genuinely ~3-dim); a resampling-based SAE or a
-  rotation-augmented training set would give a cleaner basis and a fair shot at an *explicit* 2-atom
-  (Ω-code) rotation-invariant order readout — the natural S3.5.
+- The dead atoms (5/8 here, 37/40 at nf=64) are the *data* being ~2–3-dim, not the SAE being too small. The
+  capacity sweep above rules out "a bigger dictionary would help" — it only dilutes. What *would* sharpen the
+  claim is a **cleaner 2-atom basis** (an explicit orthogonal cos2θ/sin2θ pair, e.g. via a 2-feature SAE or
+  rotation-augmented training), nudging 0.994→~1.0. That is a refinement, not a rescue.
+- The genuinely open direction is **richer input, not more atoms**: the angle histogram is intrinsically ~2D,
+  so to find structure *beyond* S₂ (tetratic S₄, defect density, bundle/domain structure, spatial correlation
+  length) the SAE must be fed a representation that contains it — spatial maps, per-MT length+position, raw
+  geometry. Only then does capacity earn its keep and could an SAE find order parameters not hand-designed.
 - Single train/test split (seeds 1–3 / 4–5). The near/far mechanism, not the pooled number, is the load-bearing result.
 
 ## Files
-`s3_train_probe.py`, `s3_v3.py` (model-selection), `s3_diag.py` (the near/far mechanism test);
-results in `~/s3_diag_result.json` on nigel. Data: S1 `~/mt_ablation/*/orderp_*.pickle`.
+`s3_train_probe.py`, `s3_v3.py` (model-selection), `s3_diag.py` (near/far mechanism), `s3_atoms_v2.py`
+(k-atom reconstruction), `s3_capacity.py` (capacity/ceiling sweep). Result JSONs in `s3_results/`.
+Data: S1 `~/mt_ablation/*/orderp_*.pickle`.
